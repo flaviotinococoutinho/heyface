@@ -1,13 +1,103 @@
 {
-  "version": 1,
+  "version": 2,
   "concepts": {
-    "Workspace": {"identity": "credential tenant", "contains": ["Person", "Animal", "Calibration"]},
-    "Principal": {"attributes": ["tenant", "credentialId", "capabilities"]},
-    "Person": {"attributes": ["name", "sex", "birth_date", "state", "city"], "has": ["Representation", "FaceObservation"]},
-    "Animal": {"attributes": ["name", "species", "sex", "breed", "color", "pattern"], "has": ["Representation", "LocalDescriptors"]},
-    "Representation": {"defined_by": ["VectorSpace", "preprocessing version"], "invariants": ["finite", "dimension matches space", "unit norm"]},
-    "FaceObservation": {"attributes": ["box", "landmarks", "landmark_order", "image_size", "detection_confidence", "sharpness"]},
-    "Candidate": {"ordered_by": "similarity", "does_not_assert": "identity"},
-    "Calibration": {"scoped_by": ["workspace", "species", "representation version"], "built_from": "identity-disjoint labeled pairs"}
+    "Workspace": {
+      "identity": "credential tenant",
+      "contains": [
+        "Person",
+        "Animal",
+        "Calibration"
+      ]
+    },
+    "Principal": {
+      "attributes": [
+        "tenant",
+        "credentialId",
+        "capabilities"
+      ]
+    },
+    "Person": {
+      "attributes": [
+        "name",
+        "sex",
+        "birth_date",
+        "state",
+        "city"
+      ],
+      "has": [
+        "Representation",
+        "FaceObservation"
+      ]
+    },
+    "Animal": {
+      "attributes": [
+        "name",
+        "species",
+        "sex",
+        "breed",
+        "color",
+        "pattern"
+      ],
+      "has": [
+        "Representation",
+        "LocalDescriptors"
+      ]
+    },
+    "Representation": {
+      "defined_by": [
+        "VectorSpace",
+        "preprocessing version"
+      ],
+      "invariants": [
+        "finite",
+        "dimension matches space",
+        "unit norm"
+      ]
+    },
+    "FaceObservation": {
+      "attributes": [
+        "box",
+        "landmarks",
+        "landmark_order",
+        "image_size",
+        "detection_confidence",
+        "sharpness"
+      ]
+    },
+    "Candidate": {
+      "ordered_by": "similarity",
+      "does_not_assert": "identity"
+    },
+    "Calibration": {
+      "scoped_by": [
+        "workspace",
+        "species",
+        "representation version"
+      ],
+      "built_from": "identity-disjoint labeled pairs"
+    },
+    "ImageRequest": {
+      "contains": [
+        "image bytes",
+        "validated operation parameters"
+      ],
+      "lifetime": "one request",
+      "decoded_by": "HTTP adapter"
+    },
+    "PublicContract": {
+      "version": "1.1.0",
+      "describes": [
+        "operations",
+        "request schemas",
+        "response schemas",
+        "capabilities",
+        "errors"
+      ],
+      "verified_by": [
+        "schema drift check",
+        "real HTTP responses",
+        "Dart client"
+      ]
+    }
   }
 }

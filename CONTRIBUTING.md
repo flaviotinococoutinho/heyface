@@ -13,3 +13,10 @@ Prefiro mudanças pequenas, com uma responsabilidade clara e uma forma de verifi
 - Antes de publicar, rode `python3 scripts/publication_check.py --staged` e `--history`. A CI repete a inspeção do histórico.
 
 Commits seguem `tipo(escopo): descrição`, por exemplo `feat(people): support birth date filters`, `fix(access): reset locale between requests` ou `docs(operations): explain snapshot recovery`. Separe mudanças de people, animals, access, web e ambiente quando forem independentes.
+
+
+## Alterar a API
+
+Preserve os clientes de `/api/v1`. Para mudar parâmetros, atualize o tipo de domínio, rode `./heyface contract-build` e confira o diff do OpenAPI. Ajuste os tipos do cliente Dart quando necessário. Antes de publicar, rode `./heyface test`, `./heyface contract`, `./heyface client-test` e `./heyface client-smoke` com o ambiente atualizado.
+
+Documente remoções ou mudanças incompatíveis em uma nova versão de API. Não introduza protocolos, campos ou operações sem implementação. Mantenha exemplos sem credenciais embutidas e sem dados pessoais reais.

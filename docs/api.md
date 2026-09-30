@@ -1,9 +1,11 @@
 # API pública
 
-Base: `http://localhost:8088/api/v1`. Todos os endpoints, exceto `health/live`, exigem `Authorization: Bearer <chave>`. `Accept-Language: pt-BR` ou `en` controla as mensagens. `X-Tenant-Id` recebido do cliente não determina o espaço de trabalho.
+Base: `http://localhost:8088/api/v1`. Todos os endpoints, exceto `health/live` e `openapi.json`, exigem `Authorization: Bearer <chave>`. `Accept-Language: pt-BR` ou `en` controla as mensagens. `X-Tenant-Id` recebido do cliente não determina o espaço de trabalho.
 
 | Método | Caminho | Escopo | Resultado |
 | --- | --- | --- | --- |
+| GET | `/openapi.json` | público | Contrato OpenAPI versionado |
+| GET | `/capabilities` | read | Limites, formatos e permissões desta chave |
 | GET | `/health/live` | público | Processo do gateway ativo |
 | GET | `/health/ready` | read | Python e coleções disponíveis |
 | GET | `/methods` | read | Métodos, dimensões e requisitos |
@@ -17,19 +19,45 @@ Base: `http://localhost:8088/api/v1`. Todos os endpoints, exceto `health/live`, 
 | POST | `/animals/search` | read | Candidatos da mesma espécie |
 | DELETE | `/animals/{uuid}` | delete | Exclui o cadastro do animal, HTTP 204 |
 
-## Imagem
+## Contrato verificável
 
-Use **uma** destas opções por chamada:
+O [arquivo OpenAPI](../services/gateway/resources/contracts/openapi.json) é servido em `/api/v1/openapi.json`. A versão do contrato é independente da URL da API: `1.1.0` acrescenta o envelope de upload, capacidades e negociação de erros sem remover contratos anteriores.
 
-1. JSON: campo `image_base64` com base64 puro ou data URI de JPEG/PNG.
-2. Multipart: campo `image` com o arquivo.
-3. Multipart: campo textual `image_base64` com a codificação da imagem.
+Os schemas de entrada são gerados a partir dos tipos usados pelo Python. Rode `./heyface contract-build` ao alterá-los e versione o resultado. `./heyface test` detecta divergência entre tipos e contrato; `./heyface contract` valida respostas reais das operações e grava `.local/contract-report.json`.
 
-Objetos como `person`, `animal` e `filters` são JSON em um campo textual quando o transporte é multipart. Valores booleanos de topo podem ser `true`/`false`. JPEG/PNG são limitados a 5 MiB e 16 milhões de pixels; base64 tem limite próprio de 7 milhões de caracteres e o corpo HTTP de 8 MiB. Mais de um rosto, imagem sem rosto ou detecção insuficiente geram erro explícito.
+## Envio recomendado de imagem
+
+Use multipart com **duas partes**: arquivo `image` e campo textual `metadata`, contendo um objeto JSON serializado. Não misture `metadata` com campos de topo antigos. O arquivo segue binário do cliente ao PHP e do PHP ao Python.
+
+```sh
+TOKEN="$(./heyface token)"
+curl --fail-with-body http://localhost:8088/api/v1/search \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Accept: application/problem+json, application/json' \
+  -H 'Accept-Language: pt-BR' \
+  -F 'image=@web/public/brand/heyface.png;type=image/png' \
+  -F 'metadata={"method":"sface","filters":{"city":"Vitória"},"limit":10}'
+```
+
+Esse comando é um exemplo interativo. Em scripts ou clientes, leia a credencial de um arquivo/provedor e passe-a em memória, sem registrar o cabeçalho ou a linha de comando.
+
+`metadata` aceita até 64 KiB em UTF-8. JPEG/PNG são limitados a 5 MiB e 16 milhões de pixels. O corpo HTTP completo aceita até 8 MiB. O cliente define o boundary multipart; não configure manualmente um `Content-Type` sem boundary. Nome de arquivo e MIME declarados não substituem a validação do conteúdo.
+
+Por compatibilidade também são aceitos:
+
+1. JSON: campo `image_base64` com base64 puro ou data URI de JPEG/PNG, junto aos parâmetros da operação.
+2. Multipart anterior: `image` com arquivo e os parâmetros nos campos de topo.
+3. Multipart anterior: `image_base64` textual e os parâmetros nos campos de topo.
+
+Objetos como `person`, `animal` e `filters` são JSON serializado nos campos textuais do multipart anterior. O base64 tem limite de 7 milhões de caracteres. Mais de uma fonte de imagem, mais de um rosto ou detecção insuficiente geram erro explícito.
+
+JPEG/PNG já chegam codificados. Protobuf pode transportar bytes, mas não comprime a foto por definição. A [decisão de transporte](decisions/001-image-transport.md) explica a escolha e quando reavaliar gRPC ou upload direto.
 
 ## Cadastro de pessoa
 
-O UUID vem do cliente. Repetir o cadastro com o mesmo UUID e a mesma credencial substitui o registro dentro daquele espaço de trabalho, sem duplicá-lo. Os dois extratores precisam concluir antes de persistir.
+No envelope recomendado, coloque `person_id` e `person` dentro de `metadata`, deixando a foto em `image`. O exemplo abaixo mostra o multipart anterior, que continua aceito.
+
+Prefira enviar um UUID criado pelo cliente. Na ausência, o gateway gera um UUID novo para manter a compatibilidade; uma repetição sem esse identificador pode criar outro cadastro. Repetir o cadastro com o mesmo UUID e a mesma credencial substitui o registro dentro daquele espaço de trabalho, sem duplicá-lo. Os dois extratores precisam concluir antes de persistir.
 
 ```sh
 TOKEN="$(./heyface token)"
@@ -100,6 +128,26 @@ O serviço não detecta automaticamente a espécie nem garante que há um único
 
 ## Falhas e acesso
 
-Erros usam `{"error":{"code":"...","message":"..."}}`, com mensagem traduzida e código estável. Casos principais: 401 sem acesso, 403 sem escopo, 404 inexistente naquele tenant, 409 calibração ausente/incompatível, 413 corpo grande, 422 entrada inválida, 429 limite de requisições e 503 serviço ocupado/indisponível. Respostas 503 do serviço de imagem incluem `Retry-After`.
+Clientes novos devem enviar `Accept: application/problem+json, application/json`. Falhas do gateway passam a usar Problem Details (RFC 9457):
 
-O limite da imagem vale depois da decodificação também. Mensagens de validação não repetem base64 nem conteúdo da requisição. Os limites do proxy podem responder antes do gateway; nesses casos o corpo pode ser texto/HTML e o cliente trata o status.
+```json
+{
+  "type": "urn:heyface:problem:vision_busy",
+  "title": "Service Unavailable",
+  "status": 503,
+  "detail": "O processamento está ocupado. Tente novamente em instantes.",
+  "instance": "urn:uuid:fdc00956-152c-4c0c-9c48-1ae0503b1049",
+  "code": "vision_busy",
+  "request_id": "fdc00956-152c-4c0c-9c48-1ae0503b1049"
+}
+```
+
+`code` é estável para lógica do cliente. `detail` respeita `Accept-Language`; `title` é a frase padrão do status HTTP. `request_id` corresponde a `X-Request-Id`, criado pelo gateway e encaminhado ao serviço interno. Respostas incluem `Cache-Control: no-store` e variam por idioma e formato aceito.
+
+Quem envia `Accept: application/json`, ou não negocia Problem Details explicitamente, continua recebendo `{"error":{"code":"...","message":"..."}}`.
+
+Casos principais: 401 sem acesso, 403 sem escopo, 404 inexistente naquele espaço de trabalho, 409 calibração ausente/incompatível, 413 corpo grande, 415 formato de transporte/imagem incompatível, 422 entrada inválida, 429 limite de requisições e 503 serviço ocupado/indisponível. Respostas 503 incluem `Retry-After`; o limitador do gateway também fornece espera em 429.
+
+Os limites do proxy podem responder antes do gateway, inclusive com corpo HTML e sem identificador da aplicação. O cliente deve preservar e tratar o status HTTP mesmo quando o corpo não for JSON.
+
+A API não faz repetição automática de uploads. Cancelamento do cliente não desfaz uma operação já aceita. Reuse o mesmo UUID ao conferir ou repetir um cadastro. `GET /capabilities` informa limites e permissões efetivos da chave; o [guia Flutter](flutter.md) aplica essas regras no cliente Dart.

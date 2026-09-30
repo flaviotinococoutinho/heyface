@@ -57,3 +57,12 @@ Uma mudança de pesos, alinhamento, normalização, crop ou dimensão cria uma n
 Para migrar: faça backup, crie outra coleção versionada, reprocesse somente imagens autorizadas disponíveis na origem, compare recall/latência e troque a leitura após validar. A aplicação não conserva imagens originais para reprocessamento futuro.
 
 Fontes: [Octane](https://laravel.com/docs/13.x/octane), [índices do Qdrant](https://qdrant.tech/documentation/manage-data/indexing/), [pgvector](https://github.com/pgvector/pgvector).
+
+
+## Contrato e clientes
+
+O gateway continua sendo a única entrada pública. O envelope multipart termina nos adapters HTTP: a aplicação Python recebe bytes e parâmetros tipados, sem depender de base64. O JSON anterior é decodificado na mesma fronteira. O PHP abre o upload como stream e encerra o recurso após a chamada; o Python limita bytes e campos durante o parsing.
+
+`services/gateway/resources/contracts/openapi.json` é o artefato público gerado por `scripts/build_contract.py`. O teste de contrato verifica a geração e as respostas reais. `sdk/dart` concentra transporte e tipos consumidos pelo próximo aplicativo, sem estado de tela ou acesso direto ao armazenamento vetorial.
+
+Veja a [decisão de transporte](decisions/001-image-transport.md). Capacidade de streaming de vídeo, contas de usuário e login móvel são integrações futuras; não são endpoints vazios no contrato atual.

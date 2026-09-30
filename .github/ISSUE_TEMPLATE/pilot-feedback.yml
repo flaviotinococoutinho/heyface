@@ -1,0 +1,30 @@
+name: Relatar um piloto
+description: Conte o que você tentou fazer com a busca visual.
+title: "pilot: "
+body:
+  - type: markdown
+    attributes:
+      value: "Descreva seu teste sem incluir chaves, fotos pessoais ou dados cadastrais."
+  - type: textarea
+    id: scenario
+    attributes:
+      label: Qual tarefa você tentou resolver?
+      description: Conte quem usaria a busca e como faz essa tarefa hoje.
+    validations: {required: true}
+  - type: dropdown
+    id: domain
+    attributes:
+      label: O que foi comparado?
+      options: [Pessoas, Animais, Integração de API]
+    validations: {required: true}
+  - type: textarea
+    id: observation
+    attributes:
+      label: O que aconteceu e o que você esperava?
+      description: Se possível, informe se usou a mesma imagem ou fotos diferentes e como conferiu os candidatos.
+    validations: {required: true}
+  - type: textarea
+    id: environment
+    attributes:
+      label: Ambiente e versão
+      description: Sistema, versão do projeto e tamanho aproximado do catálogo, sem informações privadas.
