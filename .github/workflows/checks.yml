@@ -1,0 +1,31 @@
+name: checks
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  integration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Inspect publication
+        run: python3 scripts/publication_check.py --history
+      - name: Start environment
+        run: ./heyface up
+      - name: Unit and boundary tests
+        run: ./heyface test
+      - name: Real inference and tenant isolation
+        run: ./heyface smoke
+      - name: Report service status
+        if: always()
+        run: ./heyface status
+      - name: Stop this environment
+        if: always()
+        run: ./heyface stop
