@@ -1,4 +1,5 @@
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const REQUEST_TIMEOUT_MS = 60_000;
 export type Person = {
   id: string;
   name: string;
@@ -31,17 +32,20 @@ export async function api<T>(
   locale: string,
   body?: unknown,
   method?: string,
+  signal?: AbortSignal,
 ): Promise<T> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 60_000);
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
     const result = await fetch("/api/v1/" + path, {
       method: method ?? (body ? "POST" : "GET"),
-      signal: controller.signal,
+      signal: signal
+        ? AbortSignal.any([controller.signal, signal])
+        : controller.signal,
       headers: {
         Authorization: "Bearer " + token,
         "Accept-Language": locale,
-        Accept: "application/json",
+        Accept: "application/problem+json, application/json",
         ...(body instanceof FormData
           ? {}
           : { "Content-Type": "application/json" }),
@@ -54,20 +58,24 @@ export async function api<T>(
             : undefined,
     });
     if (result.status === 204) return undefined as T;
-    const content = await result.json();
-    if (!result.ok)
-      throw new Error(content.error?.message ?? `HTTP ${result.status}`);
+    const content = await result.json().catch(() => null);
+    if (!result.ok || content === null)
+      throw new Error(
+        content?.detail ?? content?.error?.message ?? `HTTP ${result.status}`,
+      );
     return content as T;
   } finally {
     clearTimeout(timeout);
   }
 }
 
-export async function imageBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve((reader.result as string).split(",")[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+export function imageMultipart(file: File, metadata: object): FormData {
+  const body = new FormData();
+  body.set(
+    "image",
+    file,
+    "image" + (file.type === "image/png" ? ".png" : ".jpg"),
+  );
+  body.set("metadata", JSON.stringify(metadata));
+  return body;
 }

@@ -1,17 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
-import { api, imageBase64, MAX_IMAGE_BYTES } from "./api";
+import { api, imageMultipart, MAX_IMAGE_BYTES } from "./api";
 import type { Match, Person, SearchResponse } from "./api";
 import { Icon } from "./Icon";
 import { useLocale } from "./i18n";
 import { MetadataFields, emptyFields } from "./MetadataFields";
 import { Dialog } from "./Dialog";
+import { StartPage } from "./StartPage";
 
-type Page = "search" | "register" | "library";
+type Page = "start" | "search" | "register" | "library";
 
 export default function App() {
   const { locale, setLocale, t } = useLocale();
-  const [page, setPage] = useState<Page>("search");
+  const [page, setPage] = useState<Page>("start");
   const [domain, setDomain] = useState<"people" | "animals">("people");
   const [token, setToken] = useState(
     () => sessionStorage.getItem("heyface.token") ?? "",
@@ -34,9 +35,11 @@ export default function App() {
   const [records, setRecords] = useState<Person[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [detail, setDetail] = useState<Match | null>(null);
+  const activeSearch = useRef<AbortController | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const accessInput = useRef<HTMLInputElement>(null);
 
+  useEffect(() => window.scrollTo(0, 0), [page]);
   useEffect(() => {
     fetch("/api/v1/health/live")
       .then((r) => setReady(r.ok))
@@ -81,9 +84,9 @@ export default function App() {
     setError("");
     setNotice("");
   }
-  async function sample() {
+  async function sample(selected = domain) {
     const path =
-      domain === "people" ? "/brand/heyface.png" : "/brand/animal.png";
+      selected === "people" ? "/brand/heyface.png" : "/brand/animal.png";
     try {
       const response = await fetch(path);
       if (!response.ok) throw new Error(t("genericError"));
@@ -93,6 +96,15 @@ export default function App() {
     } catch {
       setError(t("genericError"));
     }
+  }
+  async function tryScenario(selected: "people" | "animals") {
+    changeDomain(selected);
+    setFields(emptyFields);
+    setPage("search");
+    setSpecies("cat");
+    setExact(false);
+    await sample(selected);
+    setNotice(t("exampleGuide"));
   }
   function requireAccess() {
     if (token) return true;
@@ -104,7 +116,7 @@ export default function App() {
     setBusy(true);
     setError("");
     try {
-      await api("methods", tokenDraft.trim(), locale);
+      await api("health/ready", tokenDraft.trim(), locale);
       setToken(tokenDraft.trim());
       sessionStorage.setItem("heyface.token", tokenDraft.trim());
       setShowAccess(false);
@@ -133,13 +145,13 @@ export default function App() {
       return;
     }
     setBusy(true);
+    const operation = new AbortController();
+    activeSearch.current = operation;
     try {
-      const image = await imageBase64(file);
       if (page === "register") {
         const body =
           domain === "people"
             ? {
-                image_base64: image,
                 person_id: crypto.randomUUID(),
                 person: {
                   ...fields,
@@ -148,12 +160,18 @@ export default function App() {
                 },
               }
             : {
-                image_base64: image,
                 animal_id: crypto.randomUUID(),
                 animal: { name: fields.name, species, consent },
                 single_subject_confirmed: true,
               };
-        await api(domain, token, locale, body);
+        await api(
+          domain,
+          token,
+          locale,
+          imageMultipart(file, body),
+          undefined,
+          operation.signal,
+        );
         setNotice(t("saved"));
         setResult(null);
       } else {
@@ -162,9 +180,8 @@ export default function App() {
         );
         const body =
           domain === "people"
-            ? { image_base64: image, filters, method, exact, limit: 10 }
+            ? { filters, method, exact, limit: 10 }
             : {
-                image_base64: image,
                 species,
                 method,
                 exact,
@@ -176,13 +193,22 @@ export default function App() {
             domain === "people" ? "search" : "animals/search",
             token,
             locale,
-            body,
+            imageMultipart(file, body),
+            undefined,
+            operation.signal,
           ),
         );
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : t("genericError"));
+      setError(
+        operation.signal.aborted
+          ? t("cancelled")
+          : e instanceof Error
+            ? e.message
+            : t("genericError"),
+      );
     } finally {
+      activeSearch.current = null;
       setBusy(false);
     }
   }
@@ -237,7 +263,7 @@ export default function App() {
           onClick={(e) => {
             e.preventDefault();
             if (busy) return;
-            setPage("search");
+            setPage("start");
           }}
         >
           <span className="brand-mark">
@@ -247,7 +273,7 @@ export default function App() {
         </a>
         <p className="workspace-label">{t("workspace")}</p>
         <nav aria-label={t("workspace")}>
-          {(["search", "register", "library"] as const).map((item) => (
+          {(["start", "search", "register", "library"] as const).map((item) => (
             <button
               key={item}
               aria-label={t(item)}
@@ -266,11 +292,13 @@ export default function App() {
             >
               <Icon
                 name={
-                  item === "search"
-                    ? "search"
-                    : item === "register"
-                      ? "plus"
-                      : "grid"
+                  item === "start"
+                    ? "image"
+                    : item === "search"
+                      ? "search"
+                      : item === "register"
+                        ? "plus"
+                        : "grid"
                 }
               />
               <span>{t(item)}</span>
@@ -280,12 +308,12 @@ export default function App() {
         <div className="sidebar-bottom">
           <Icon name="shield" size={23} />
           <p>{t("privacy")}</p>
-          <span>heyface / 0.1</span>
+          <span>heyface / 0.2</span>
         </div>
       </aside>
       <div className="main-shell">
         <header className="topbar">
-          <div className="environment">
+          <div className="environment" title={t("waitingHelp")}>
             <span className={ready ? "status-dot" : "status-dot waiting"} />
             {t("local")}
             <span className="status-copy">
@@ -321,371 +349,399 @@ export default function App() {
           </div>
         </header>
         <main>
-          <section className="hero">
-            <img src="/brand/heyface.png" alt="" />
-            <div className="hero-content">
-              <div className="hero-rule" />
-              <h1>{t("heroTitle")}</h1>
-              <p>{t("heroText")}</p>
-              <span className="hero-chip">
-                <Icon name="shield" size={15} />
-                {t("local")}
-              </span>
-            </div>
-          </section>
-          <div className="section-heading">
-            <div>
-              <h2>{t(page)}</h2>
-              <p>{t(domain === "people" ? "humanMode" : "animalMode")}</p>
-            </div>
-            {page !== "library" && (
-              <div
-                className="domain-switch"
-                role="group"
-                aria-label={t("method")}
-              >
-                <button
-                  disabled={busy}
-                  aria-pressed={domain === "people"}
-                  onClick={() => changeDomain("people")}
-                >
-                  <Icon name="person" size={17} />
-                  {t("people")}
-                </button>
-                <button
-                  disabled={busy}
-                  aria-pressed={domain === "animals"}
-                  onClick={() => changeDomain("animals")}
-                >
-                  <Icon name="paw" size={17} />
-                  {t("animals")}
-                </button>
-              </div>
-            )}
-          </div>
-          {error && (
-            <div className="notice error" role="alert">
-              {error}
-              <button aria-label={t("close")} onClick={() => setError("")}>
-                <Icon name="close" size={16} />
-              </button>
-            </div>
-          )}
-          {notice && (
-            <div className="notice success" role="status">
-              {notice}
-            </div>
-          )}
-          {page === "library" ? (
-            <section className="catalog">
-              <MetadataFields
-                fields={fields}
-                setFields={setFields}
-                domain={domain}
-                page={page}
-                t={t}
-              />
-              <button
-                className="primary"
-                disabled={busy}
-                onClick={() => void loadRecords()}
-              >
-                {t("refresh")}
-              </button>
-              {records.length === 0 ? (
-                <p className="catalog-empty">{t("recordsEmpty")}</p>
-              ) : (
-                <div className="record-list">
-                  {records.map((record) => (
-                    <button
-                      key={record.id}
-                      className="record-row"
-                      onClick={() => setDetail({ person: record, score: 0 })}
-                    >
-                      <span className="initial">{record.name.slice(0, 1)}</span>
-                      <strong>{record.name}</strong>
-                      <span>
-                        {record.city}, {record.state}
-                      </span>
-                      <Icon name="arrow" size={18} />
-                    </button>
-                  ))}
-                </div>
-              )}
-              {cursor && (
-                <button
-                  className="secondary"
-                  disabled={busy}
-                  onClick={() => void loadRecords(true)}
-                >
-                  {t("loadMore")}
-                </button>
-              )}
-            </section>
+          {page === "start" ? (
+            <StartPage
+              t={t}
+              connected={Boolean(token)}
+              onConnect={() => setShowAccess(true)}
+              onTry={(value) => void tryScenario(value)}
+            />
           ) : (
-            <div className="workbench">
-              <form className="query-panel" onSubmit={submit}>
-                <div className="panel-heading">
-                  <h3>{t("image")}</h3>
-                  <button
-                    type="button"
-                    className="text-button"
-                    onClick={() => void sample()}
+            <>
+              <section className="hero">
+                <img src="/brand/heyface.png" alt="" />
+                <div className="hero-content">
+                  <div className="hero-rule" />
+                  <h1>{t("heroTitle")}</h1>
+                  <p>{t("heroText")}</p>
+                  <span className="hero-chip">
+                    <Icon name="shield" size={15} />
+                    {t("local")}
+                  </span>
+                </div>
+              </section>
+              <div className="section-heading">
+                <div>
+                  <h2>{t(page)}</h2>
+                  <p>{t(domain === "people" ? "humanMode" : "animalMode")}</p>
+                </div>
+                {page !== "library" && (
+                  <div
+                    className="domain-switch"
+                    role="group"
+                    aria-label={t("method")}
                   >
-                    {t("sample")}
+                    <button
+                      disabled={busy}
+                      aria-pressed={domain === "people"}
+                      onClick={() => changeDomain("people")}
+                    >
+                      <Icon name="person" size={17} />
+                      {t("people")}
+                    </button>
+                    <button
+                      disabled={busy}
+                      aria-pressed={domain === "animals"}
+                      onClick={() => changeDomain("animals")}
+                    >
+                      <Icon name="paw" size={17} />
+                      {t("animals")}
+                    </button>
+                  </div>
+                )}
+              </div>
+              {error && (
+                <div className="notice error" role="alert">
+                  {error}
+                  <button aria-label={t("close")} onClick={() => setError("")}>
+                    <Icon name="close" size={16} />
                   </button>
                 </div>
-                <div
-                  className={file ? "upload-zone has-image" : "upload-zone"}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    chooseFile(e.dataTransfer.files[0]);
-                  }}
+              )}
+              {busy && activeSearch.current && page === "search" && (
+                <button
+                  className="text-link cancel-search"
+                  onClick={() => activeSearch.current?.abort()}
                 >
-                  <input
-                    ref={input}
-                    type="file"
-                    accept="image/jpeg,image/png"
-                    className="visually-hidden"
-                    aria-label={t("choose")}
-                    onChange={(e) => chooseFile(e.target.files?.[0])}
+                  {t("cancelSearch")}
+                </button>
+              )}
+              {notice && (
+                <div className="notice success" role="status">
+                  {notice}
+                </div>
+              )}
+              {page === "library" ? (
+                <section className="catalog">
+                  <MetadataFields
+                    fields={fields}
+                    setFields={setFields}
+                    domain={domain}
+                    page={page}
+                    t={t}
                   />
-                  {preview ? (
-                    <>
-                      <img src={preview} alt={t("image")} />
-                      <div className="image-toolbar">
-                        <span>{file?.name}</span>
-                        <button
-                          type="button"
-                          onClick={() => input.current?.click()}
-                        >
-                          {t("replace")}
-                        </button>
-                        <button
-                          type="button"
-                          aria-label={t("removeImage")}
-                          onClick={() => setFile(null)}
-                        >
-                          <Icon name="close" size={16} />
-                        </button>
-                      </div>
-                    </>
+                  <button
+                    className="primary"
+                    disabled={busy}
+                    onClick={() => void loadRecords()}
+                  >
+                    {t("refresh")}
+                  </button>
+                  {records.length === 0 ? (
+                    <p className="catalog-empty">{t("recordsEmpty")}</p>
                   ) : (
+                    <div className="record-list">
+                      {records.map((record) => (
+                        <button
+                          key={record.id}
+                          className="record-row"
+                          onClick={() =>
+                            setDetail({ person: record, score: 0 })
+                          }
+                        >
+                          <span className="initial">
+                            {record.name.slice(0, 1)}
+                          </span>
+                          <strong>{record.name}</strong>
+                          <span>
+                            {record.city}, {record.state}
+                          </span>
+                          <Icon name="arrow" size={18} />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {cursor && (
                     <button
-                      type="button"
-                      className="upload-trigger"
-                      onClick={() => input.current?.click()}
+                      className="secondary"
+                      disabled={busy}
+                      onClick={() => void loadRecords(true)}
                     >
-                      <span className="upload-icon">
-                        <Icon name="image" size={29} />
-                      </span>
-                      <strong>{t("choose")}</strong>
-                      <span>{t("drag")}</span>
-                      <small>{t("formats")}</small>
+                      {t("loadMore")}
                     </button>
                   )}
-                </div>
-                {domain === "animals" && (
-                  <>
-                    <p className="helper">{t("animalHelp")}</p>
-                    <label className="field">
-                      {t("species")}
-                      <select
-                        value={species}
-                        onChange={(e) => setSpecies(e.target.value)}
-                      >
-                        <option value="cat">{t("cat")}</option>
-                        <option value="dog">{t("dog")}</option>
-                        <option value="tiger">
-                          {locale === "en" ? "Tiger" : "Tigre"}
-                        </option>
-                        <option value="zebra">{t("zebra")}</option>
-                      </select>
-                    </label>
-                    <label className="checkbox">
-                      <input
-                        type="checkbox"
-                        checked={cropConfirmed}
-                        onChange={(e) => setCropConfirmed(e.target.checked)}
-                      />
-                      {t("animalConfirm")}
-                    </label>
-                  </>
-                )}
-                {(domain === "people" || page === "register") && (
-                  <div className="filters-section">
+                </section>
+              ) : (
+                <div className="workbench">
+                  <form className="query-panel" onSubmit={submit}>
                     <div className="panel-heading">
-                      <h3>
-                        {t(page === "register" ? "personDetails" : "filters")}
-                      </h3>
-                      {page === "search" && (
+                      <h3>{t("image")}</h3>
+                      <button
+                        type="button"
+                        className="text-button"
+                        onClick={() => void sample()}
+                      >
+                        {t("sample")}
+                      </button>
+                    </div>
+                    <div
+                      className={file ? "upload-zone has-image" : "upload-zone"}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        chooseFile(e.dataTransfer.files[0]);
+                      }}
+                    >
+                      <input
+                        ref={input}
+                        type="file"
+                        accept="image/jpeg,image/png"
+                        className="visually-hidden"
+                        aria-label={t("choose")}
+                        onChange={(e) => chooseFile(e.target.files?.[0])}
+                      />
+                      {preview ? (
+                        <>
+                          <img src={preview} alt={t("image")} />
+                          <div className="image-toolbar">
+                            <span>{file?.name}</span>
+                            <button
+                              type="button"
+                              onClick={() => input.current?.click()}
+                            >
+                              {t("replace")}
+                            </button>
+                            <button
+                              type="button"
+                              aria-label={t("removeImage")}
+                              onClick={() => setFile(null)}
+                            >
+                              <Icon name="close" size={16} />
+                            </button>
+                          </div>
+                        </>
+                      ) : (
                         <button
                           type="button"
-                          className="text-button"
-                          onClick={() => setFields(emptyFields)}
+                          className="upload-trigger"
+                          onClick={() => input.current?.click()}
                         >
-                          {t("clear")}
+                          <span className="upload-icon">
+                            <Icon name="image" size={29} />
+                          </span>
+                          <strong>{t("choose")}</strong>
+                          <span>{t("drag")}</span>
+                          <small>{t("formats")}</small>
                         </button>
                       )}
                     </div>
-                    {page === "search" && (
-                      <p className="helper">{t("filterHelp")}</p>
-                    )}
-                    <MetadataFields
-                      fields={fields}
-                      setFields={setFields}
-                      domain={domain}
-                      page={page}
-                      t={t}
-                    />
-                  </div>
-                )}
-                {page === "search" && (
-                  <div className="search-options">
-                    <label className="field">
-                      {t("method")}
-                      <select
-                        value={method}
-                        onChange={(e) => setMethod(e.target.value)}
-                      >
-                        {domain === "people" ? (
-                          <>
-                            <option value="facenet">FaceNet</option>
-                            <option value="sface">SFace</option>
-                          </>
-                        ) : (
-                          <>
-                            <option value="dinov2">{t("global")}</option>
-                            <option value="wildfusion">
-                              {t("calibrated")}
-                            </option>
-                          </>
-                        )}
-                      </select>
-                    </label>
-                    <label
-                      className="checkbox exact-option"
-                      title={t("exactHelp")}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={exact}
-                        onChange={(e) => setExact(e.target.checked)}
-                      />
-                      {t("exact")}
-                    </label>
-                  </div>
-                )}
-                {method === "wildfusion" && (
-                  <p className="helper">{t("calibrationNote")}</p>
-                )}
-                {page === "register" && (
-                  <label className="checkbox consent">
-                    <input
-                      type="checkbox"
-                      checked={consent}
-                      onChange={(e) => setConsent(e.target.checked)}
-                    />
-                    {t("consent")}
-                  </label>
-                )}
-                <button className="primary submit-button" disabled={busy}>
-                  {busy ? (
-                    <span className="spinner" />
-                  ) : (
-                    <Icon name={page === "register" ? "plus" : "search"} />
-                  )}
-                  <span>
-                    {t(
-                      busy
-                        ? page === "register"
-                          ? "saving"
-                          : "processing"
-                        : page,
-                    )}
-                  </span>
-                  {!busy && <Icon name="arrow" size={18} />}
-                </button>
-              </form>
-              <section className="results-panel" aria-live="polite">
-                <div className="panel-heading">
-                  <h3>{t("results")}</h3>
-                  <span className="count">{result?.matches.length ?? "—"}</span>
-                </div>
-                {!result || result.matches.length === 0 ? (
-                  <div className="empty-results">
-                    <div className="scan-illustration">
-                      <div className="scan-corner a" />
-                      <div className="scan-corner b" />
-                      <div className="scan-corner c" />
-                      <div className="scan-corner d" />
-                      <Icon
-                        name={domain === "people" ? "person" : "paw"}
-                        size={53}
-                      />
-                      <span />
-                    </div>
-                    <h4>{t(result ? "noResults" : "empty")}</h4>
-                    <p>{t(result ? "noResultsHelp" : "emptyHelp")}</p>
-                  </div>
-                ) : (
-                  <>
-                    <p className="score-note">{t("scoreHelp")}</p>
-                    <div className="matches">
-                      {result.matches.map((match, index) => {
-                        const entity = match.person ?? match.animal!;
-                        return (
-                          <button
-                            className="match-row"
-                            key={entity.id}
-                            onClick={() => setDetail(match)}
+                    {domain === "animals" && (
+                      <>
+                        <p className="helper">{t("animalHelp")}</p>
+                        <label className="field">
+                          {t("species")}
+                          <select
+                            value={species}
+                            onChange={(e) => setSpecies(e.target.value)}
                           >
-                            <span className="rank">
-                              {String(index + 1).padStart(2, "0")}
-                            </span>
-                            <div className="match-content">
-                              <strong>{entity.name}</strong>
-                              <span>
-                                {match.person
-                                  ? `${match.person.city}, ${match.person.state}`
-                                  : match.animal?.species}
-                              </span>
-                              <div className="score-track">
-                                <i
-                                  style={{
-                                    width: `${Math.max(0, Math.min(1, match.score)) * 100}%`,
-                                  }}
-                                />
-                              </div>
-                            </div>
-                            <div className="match-score">
-                              <strong>{match.score.toFixed(4)}</strong>
-                              <span>{t("score")}</span>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {result.timing_ms && (
-                      <div className="timings">
-                        <span>{t("timings")}</span>
-                        <strong>
-                          {(
-                            result.timing_ms.inference + result.timing_ms.search
-                          ).toFixed(0)}{" "}
-                          ms
-                        </strong>
+                            <option value="cat">{t("cat")}</option>
+                            <option value="dog">{t("dog")}</option>
+                            <option value="tiger">
+                              {locale === "en" ? "Tiger" : "Tigre"}
+                            </option>
+                            <option value="zebra">{t("zebra")}</option>
+                          </select>
+                        </label>
+                        <label className="checkbox">
+                          <input
+                            type="checkbox"
+                            checked={cropConfirmed}
+                            onChange={(e) => setCropConfirmed(e.target.checked)}
+                          />
+                          {t("animalConfirm")}
+                        </label>
+                      </>
+                    )}
+                    {(domain === "people" || page === "register") && (
+                      <div className="filters-section">
+                        <div className="panel-heading">
+                          <h3>
+                            {t(
+                              page === "register" ? "personDetails" : "filters",
+                            )}
+                          </h3>
+                          {page === "search" && (
+                            <button
+                              type="button"
+                              className="text-button"
+                              onClick={() => setFields(emptyFields)}
+                            >
+                              {t("clear")}
+                            </button>
+                          )}
+                        </div>
+                        {page === "search" && (
+                          <p className="helper">{t("filterHelp")}</p>
+                        )}
+                        <MetadataFields
+                          fields={fields}
+                          setFields={setFields}
+                          domain={domain}
+                          page={page}
+                          t={t}
+                        />
                       </div>
                     )}
-                  </>
-                )}
-                <div className="results-footer">
-                  <Icon name="shield" size={16} />
-                  {t("privacy")}
+                    {page === "search" && (
+                      <div className="search-options">
+                        <label className="field">
+                          {t("method")}
+                          <select
+                            value={method}
+                            onChange={(e) => setMethod(e.target.value)}
+                          >
+                            {domain === "people" ? (
+                              <>
+                                <option value="facenet">FaceNet</option>
+                                <option value="sface">SFace</option>
+                              </>
+                            ) : (
+                              <>
+                                <option value="dinov2">{t("global")}</option>
+                                <option value="wildfusion">
+                                  {t("calibrated")}
+                                </option>
+                              </>
+                            )}
+                          </select>
+                        </label>
+                        <label
+                          className="checkbox exact-option"
+                          title={t("exactHelp")}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={exact}
+                            onChange={(e) => setExact(e.target.checked)}
+                          />
+                          {t("exact")}
+                        </label>
+                      </div>
+                    )}
+                    {method === "wildfusion" && (
+                      <p className="helper">{t("calibrationNote")}</p>
+                    )}
+                    {page === "register" && (
+                      <label className="checkbox consent">
+                        <input
+                          type="checkbox"
+                          checked={consent}
+                          onChange={(e) => setConsent(e.target.checked)}
+                        />
+                        {t("consent")}
+                      </label>
+                    )}
+                    <button className="primary submit-button" disabled={busy}>
+                      {busy ? (
+                        <span className="spinner" />
+                      ) : (
+                        <Icon name={page === "register" ? "plus" : "search"} />
+                      )}
+                      <span>
+                        {t(
+                          busy
+                            ? page === "register"
+                              ? "saving"
+                              : "processing"
+                            : page,
+                        )}
+                      </span>
+                      {!busy && <Icon name="arrow" size={18} />}
+                    </button>
+                  </form>
+                  <section className="results-panel" aria-live="polite">
+                    <div className="panel-heading">
+                      <h3>{t("results")}</h3>
+                      <span className="count">
+                        {result?.matches.length ?? "—"}
+                      </span>
+                    </div>
+                    {!result || result.matches.length === 0 ? (
+                      <div className="empty-results">
+                        <div className="scan-illustration">
+                          <div className="scan-corner a" />
+                          <div className="scan-corner b" />
+                          <div className="scan-corner c" />
+                          <div className="scan-corner d" />
+                          <Icon
+                            name={domain === "people" ? "person" : "paw"}
+                            size={53}
+                          />
+                          <span />
+                        </div>
+                        <h4>{t(result ? "noResults" : "empty")}</h4>
+                        <p>{t(result ? "noResultsHelp" : "emptyHelp")}</p>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="score-note">{t("scoreHelp")}</p>
+                        <div className="matches">
+                          {result.matches.map((match, index) => {
+                            const entity = match.person ?? match.animal!;
+                            return (
+                              <button
+                                className="match-row"
+                                key={entity.id}
+                                onClick={() => setDetail(match)}
+                              >
+                                <span className="rank">
+                                  {String(index + 1).padStart(2, "0")}
+                                </span>
+                                <div className="match-content">
+                                  <strong>{entity.name}</strong>
+                                  <span>
+                                    {match.person
+                                      ? `${match.person.city}, ${match.person.state}`
+                                      : match.animal?.species}
+                                  </span>
+                                  <div className="score-track">
+                                    <i
+                                      style={{
+                                        width: `${Math.max(0, Math.min(1, match.score)) * 100}%`,
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                                <div className="match-score">
+                                  <strong>{match.score.toFixed(4)}</strong>
+                                  <span>{t("score")}</span>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {result.timing_ms && (
+                          <div className="timings">
+                            <span>{t("timings")}</span>
+                            <strong>
+                              {(
+                                result.timing_ms.inference +
+                                result.timing_ms.search
+                              ).toFixed(0)}{" "}
+                              ms
+                            </strong>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    <div className="results-footer">
+                      <Icon name="shield" size={16} />
+                      {t("privacy")}
+                    </div>
+                  </section>
                 </div>
-              </section>
-            </div>
+              )}
+            </>
           )}
           <footer className="page-footer">
             <span>heyface.</span>

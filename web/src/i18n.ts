@@ -1,6 +1,50 @@
 import { useEffect, useState } from "react";
 
 const pt = {
+  start: "Começar",
+  startTitle: "Encontre cadastros pela imagem.",
+  startText:
+    "Aproxime uma foto das informações que você já tem. Heyface organiza candidatos por semelhança para você comparar, filtrar e decidir o próximo passo.",
+  firstTest: "Seu primeiro teste",
+  firstTestHelp:
+    "Dois exemplos fictícios para conhecer o fluxo, sem precisar de uma foto sua.",
+  exampleIdentity: "Alex Exemplo · cadastro fictício",
+  prepareExamples: "Prepare os exemplos",
+  prepareHelp: "No terminal do projeto, rode uma vez:",
+  connectEnvironment: "Conecte seu ambiente",
+  connectHelp:
+    "Use a chave exibida por ./heyface token. Ela libera o seu espaço de teste.",
+  chooseScenario: "Escolha um cenário",
+  scenarioHelp:
+    "Abra um dos exemplos abaixo, faça a busca e explore os detalhes do cadastro.",
+  peopleScenario: "Uma foto, um cadastro para conferir",
+  peopleScenarioHelp:
+    "Teste a localização de pessoas em um catálogo com imagens autorizadas.",
+  peopleValueOne: "Combine a imagem com nome, cidade e data de nascimento.",
+  peopleValueTwo: "Compare dois métodos e examine os candidatos encontrados.",
+  animalScenario: "Padrões que ajudam a reencontrar",
+  animalScenarioHelp:
+    "Explore a comparação entre animais da mesma espécie. Um ponto de partida para catálogos de abrigos, clínicas e projetos de campo.",
+  tryPerson: "Testar com uma pessoa",
+  tryAnimal: "Testar com um animal",
+  pilotTitle: "Seu cenário merece um teste próprio.",
+  pilotHelp:
+    "O exemplo usa a mesma imagem no cadastro e na consulta. Depois, use fotos diferentes, inclua casos sem correspondência e confira os resultados com quem conhece o catálogo.",
+  pilotLink: "Montar um piloto",
+  integrationTitle: "Leve a busca para o seu produto.",
+  integrationHelp:
+    "API com contrato público e cliente Dart para preparar a integração com Flutter.",
+  apiContract: "Contrato OpenAPI",
+  flutterGuide: "Guia para Flutter",
+  sourceCode: "Código do projeto",
+  exampleGuide:
+    "Exemplo carregado. Se ainda não preparou os cadastros, rode ./heyface demo. Conecte sua chave e faça a busca. A mesma foto testa o fluxo; não mede acurácia.",
+  cancelSearch: "Cancelar envio",
+  cancelled:
+    "Consulta cancelada neste navegador. O processamento já iniciado no servidor pode terminar.",
+  waitingHelp:
+    "O gateway responde. A disponibilidade completa é conferida ao conectar o acesso.",
+
   workspace: "Seu espaço de busca",
   search: "Buscar semelhanças",
   register: "Cadastrar",
@@ -8,7 +52,7 @@ const pt = {
   animals: "Animais",
   library: "Cadastros",
   local: "Ambiente local",
-  ready: "Disponível",
+  ready: "Gateway disponível",
   offline: "Iniciando",
   connect: "Conectar acesso",
   connected: "Acesso conectado",
@@ -96,6 +140,49 @@ const pt = {
   clear: "Limpar filtros",
 };
 const en: Record<keyof typeof pt, string> = {
+  start: "Get started",
+  startTitle: "Find records from a photo.",
+  startText:
+    "Connect an image to the information you already have. Heyface ranks similar candidates so you can compare, filter and choose the next step.",
+  firstTest: "Your first test",
+  firstTestHelp:
+    "Two fictional examples to explore the workflow without using a photo of yourself.",
+  exampleIdentity: "Alex Example · fictional record",
+  prepareExamples: "Prepare the examples",
+  prepareHelp: "Run once in the project terminal:",
+  connectEnvironment: "Connect your environment",
+  connectHelp:
+    "Use the key shown by ./heyface token to access your test workspace.",
+  chooseScenario: "Choose a scenario",
+  scenarioHelp:
+    "Open an example below, run a search and explore the record details.",
+  peopleScenario: "A photo, a record to review",
+  peopleScenarioHelp: "Try finding people in a catalog of authorized images.",
+  peopleValueOne: "Combine the image with name, city and date of birth.",
+  peopleValueTwo: "Compare two methods and examine the candidates.",
+  animalScenario: "Patterns that help find a match",
+  animalScenarioHelp:
+    "Explore comparisons within one species. A starting point for shelter, veterinary and field project catalogs.",
+  tryPerson: "Try a person",
+  tryAnimal: "Try an animal",
+  pilotTitle: "Your scenario deserves its own test.",
+  pilotHelp:
+    "The example uses the same image for registration and search. Next, use different photos, include cases with no match and review results with someone who knows the catalog.",
+  pilotLink: "Plan a pilot",
+  integrationTitle: "Bring visual search to your product.",
+  integrationHelp:
+    "A public API contract and a Dart client to prepare your Flutter integration.",
+  apiContract: "OpenAPI contract",
+  flutterGuide: "Flutter guide",
+  sourceCode: "Project source",
+  exampleGuide:
+    "Example loaded. Run ./heyface demo if you have not prepared the records. Connect your key and search. The same photo tests the workflow, not accuracy.",
+  cancelSearch: "Cancel upload",
+  cancelled:
+    "Search cancelled in this browser. Processing already started on the server may finish.",
+  waitingHelp:
+    "The gateway responds. Full readiness is checked when access is connected.",
+
   workspace: "Your search workspace",
   search: "Find similarities",
   register: "Register",
@@ -103,7 +190,7 @@ const en: Record<keyof typeof pt, string> = {
   animals: "Animals",
   library: "Records",
   local: "Local environment",
-  ready: "Available",
+  ready: "Gateway available",
   offline: "Starting",
   connect: "Connect access",
   connected: "Access connected",
