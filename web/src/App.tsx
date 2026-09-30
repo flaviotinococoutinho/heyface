@@ -75,6 +75,8 @@ export default function App() {
       return;
     }
     setFile(candidate);
+    setConsent(false);
+    setCropConfirmed(false);
     setResult(null);
     setError("");
     setNotice("");
@@ -498,7 +500,7 @@ export default function App() {
                         <option value="tiger">
                           {locale === "en" ? "Tiger" : "Tigre"}
                         </option>
-                        <option value="zebra">Zebra</option>
+                        <option value="zebra">{t("zebra")}</option>
                       </select>
                     </label>
                     <label className="checkbox">

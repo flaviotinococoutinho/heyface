@@ -57,6 +57,8 @@ const pt = {
   animalConfirm: "A imagem está recortada e contém um único animal.",
   species: "Espécie",
   cat: "Gato",
+  tiger: "Tigre",
+  zebra: "Zebra",
   dog: "Cachorro",
   animalHelp:
     "Use uma foto recortada do mesmo lado do rosto ou corpo. Padrões visuais também ajudam na comparação.",
@@ -148,6 +150,8 @@ const en: Record<keyof typeof pt, string> = {
   animalConfirm: "The image is cropped and contains only one animal.",
   species: "Species",
   cat: "Cat",
+  tiger: "Tiger",
+  zebra: "Zebra",
   dog: "Dog",
   animalHelp:
     "Use a cropped image of the same side of the face or body. Visual patterns also help comparison.",
