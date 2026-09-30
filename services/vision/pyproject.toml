@@ -1,0 +1,42 @@
+[project]
+name = "heyface-vision"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "fastapi==0.142.2", "uvicorn==0.54.0", "httpx==0.28.1",
+  "pydantic==2.13.5", "pillow==12.3.0", "numpy==2.5.3",
+  "opencv-python-headless==5.0.0.93", "facenet-pytorch==2.6.0",
+  "torch==2.14.0", "torchvision==0.29.0",
+  "timm==1.0.30", "safetensors==0.8.0", "scikit-learn==1.9.1", "scipy==1.18.1",
+]
+
+[dependency-groups]
+dev = ["pytest==9.1.1", "ruff==0.16.9"]
+
+[tool.uv]
+environments = ["sys_platform == 'linux'"]
+# Upstream FaceNet bounds target 2024. Keep the implementation, validate against
+# current CPU runtimes instead of installing obsolete Torch/Pillow dependencies.
+override-dependencies = ["torch==2.14.0", "torchvision==0.29.0", "numpy==2.5.3", "pillow==12.3.0"]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+torchvision = { index = "pytorch-cpu" }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
