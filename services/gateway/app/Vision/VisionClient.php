@@ -19,7 +19,8 @@ final class VisionClient implements VisionGateway
                 ->withToken(config('heyface.service_token'))
                 ->withHeaders(['X-Tenant-Id' => $principal->tenant,
                     'X-Request-Id' => (string) Str::uuid()])
-                ->connectTimeout(2)->timeout(45)->acceptJson()
+                ->connectTimeout(config('heyface.connect_timeout_seconds'))
+                ->timeout(config('heyface.vision_timeout_seconds'))->acceptJson()
                 ->send($method, $path, $data ? ['json' => $data] : []);
         } catch (ConnectionException) {
             return new RemoteResponse(503, ['error' => ['code' => 'vision_unavailable']], ['Retry-After' => '2']);
@@ -29,7 +30,10 @@ final class VisionClient implements VisionGateway
         }
         $body = $result->json();
         if (! is_array($body)) {
-            return new RemoteResponse(502, ['error' => ['code' => 'vision_unavailable']]);
+            $status = $result->status() === 503 ? 503 : 502;
+            $headers = $status === 503 ? ['Retry-After' => '2'] : [];
+
+            return new RemoteResponse($status, ['error' => ['code' => 'vision_unavailable']], $headers);
         }
         $headers = $result->status() === 503 ? ['Retry-After' => '2'] : [];
 

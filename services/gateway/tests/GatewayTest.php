@@ -95,4 +95,12 @@ final class GatewayTest extends TestCase
         ])->assertOk();
         Http::assertSent(fn ($request) => str_contains($request->body(), '"filters":{}'));
     }
+
+    public function test_plain_text_overload_keeps_a_retryable_status(): void
+    {
+        Http::fake(['vision:8000/*' => Http::response('Service Unavailable', 503)]);
+        $this->withToken('reader-a')->postJson('/api/v1/search', ['image_base64' => 'abcd'])
+            ->assertStatus(503)->assertHeader('Retry-After', '2')
+            ->assertJsonPath('error.code', 'vision_unavailable');
+    }
 }
