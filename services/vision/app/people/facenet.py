@@ -31,16 +31,16 @@ class FaceEngine:
         weights = {k: v for k, v in weights.items() if not k.startswith("logits.")}
         self.model.load_state_dict(weights, strict=True)
 
-    def extract(self, encoded: str) -> tuple[list[float], dict]:
+    def extract(self, content: bytes) -> tuple[list[float], dict]:
         if not self.lock.acquire(timeout=IMAGE.inference_queue_seconds):
             raise DomainError("vision_busy", 503)
         try:
-            return self._extract(encoded)
+            return self._extract(content)
         finally:
             self.lock.release()
 
-    def _extract(self, encoded: str) -> tuple[list[float], dict]:
-        image = decode_image(encoded, self.settings)
+    def _extract(self, content: bytes) -> tuple[list[float], dict]:
+        image = decode_image(content, self.settings)
         if min(image.size) < IMAGE.minimum_face_size:
             raise DomainError("face_too_small")
         original_width, original_height = image.size

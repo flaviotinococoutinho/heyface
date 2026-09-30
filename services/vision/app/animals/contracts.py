@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import Field
 
-from app.domain.contracts import ImageInput, Sex, StrictModel
+from app.domain.contracts import Sex, StrictModel
 from app.policies import SEARCH
 
 Species = Annotated[str, Field(pattern=r"^[a-z][a-z0-9-]{1,63}$")]
@@ -19,13 +19,13 @@ class Animal(StrictModel):
     consent: Literal[True]
 
 
-class AnimalEnrollment(ImageInput):
+class AnimalEnrollment(StrictModel):
     animal: Animal
     animal_id: UUID
     single_subject_confirmed: Literal[True]
 
 
-class AnimalSearch(ImageInput):
+class AnimalSearch(StrictModel):
     species: Species
     single_subject_confirmed: Literal[True]
     method: Literal["dinov2", "wildfusion"] = "dinov2"

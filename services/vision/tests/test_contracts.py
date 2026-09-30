@@ -9,7 +9,7 @@ from pydantic import ValidationError
 from app.config import Settings
 from app.domain.representations import Embedding, VectorSpace
 from app.errors import DomainError
-from app.media.images import decode_image
+from app.media.images import decode_base64, decode_image
 from app.people.contracts import Filters, Person, Search
 from app.people.repository import build_filter, point_id
 
@@ -82,7 +82,7 @@ def test_invalid_registration_is_rejected(changes):
 )
 def test_search_rejects_unbounded_and_unrecognized_parameters(changes):
     with pytest.raises(ValidationError):
-        Search(image_base64="abcd", **changes)
+        Search(**changes)
 
 
 def test_date_interval_is_validated():
@@ -92,7 +92,10 @@ def test_date_interval_is_validated():
 
 @pytest.mark.parametrize("fmt", ["JPEG", "PNG"])
 def test_image_decode_uses_actual_content(fmt):
-    assert decode_image(encoded_image(fmt), Settings()).mode == "RGB"
+    assert (
+        decode_image(decode_base64(encoded_image(fmt), Settings().max_image_bytes), Settings()).mode
+        == "RGB"
+    )
 
 
 @pytest.mark.parametrize(
@@ -105,21 +108,27 @@ def test_image_decode_uses_actual_content(fmt):
 )
 def test_bad_image_errors_are_specific(value, code):
     with pytest.raises(DomainError) as error:
-        decode_image(value, Settings())
+        decode_image(decode_base64(value, Settings().max_image_bytes), Settings())
     assert error.value.code == code
 
 
 def test_pixel_limit_is_checked_before_decode():
     with pytest.raises(DomainError) as error:
-        decode_image(encoded_image(size=(100, 100)), Settings(max_pixels=9000))
+        decode_image(
+            decode_base64(encoded_image(size=(100, 100)), Settings().max_image_bytes),
+            Settings(max_pixels=9000),
+        )
     assert error.value.status == 413
 
 
 def test_data_uri_support_and_size_limit():
     value = "data:image/png;base64," + encoded_image()
-    assert decode_image(value, Settings()).size == (20, 20)
+    assert decode_image(decode_base64(value, Settings().max_image_bytes), Settings()).size == (
+        20,
+        20,
+    )
     with pytest.raises(DomainError):
-        decode_image(value, Settings(max_image_bytes=8))
+        decode_base64(value, 8)
 
 
 def test_embedding_normalization_and_immutability():

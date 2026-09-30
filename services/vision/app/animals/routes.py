@@ -1,19 +1,25 @@
+from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 
 from app.animals.contracts import AnimalEnrollment, AnimalSearch
+from app.media.requests import ImageRequest, image_request
 
 
 def router(tenant_dependency):
-    from fastapi import Depends
-
     routes = APIRouter(prefix="/v1/animals", dependencies=[Depends(tenant_dependency)])
 
     @routes.post("", status_code=201)
-    def enroll(body: AnimalEnrollment, request: Request):
+    def enroll(
+        request: Request,
+        payload: Annotated[
+            ImageRequest[AnimalEnrollment], Depends(image_request(AnimalEnrollment))
+        ],
+    ):
+        body = payload.parameters
         tenant = request.headers["x-tenant-id"]
-        vector, local, metadata = request.app.state.animals.extract(body.image_base64)
+        vector, local, metadata = request.app.state.animals.extract(payload.image)
         return {
             "animal": request.app.state.animal_store.enroll_animal(
                 tenant, body, vector, local, metadata
@@ -21,9 +27,13 @@ def router(tenant_dependency):
         }
 
     @routes.post("/search")
-    def search(body: AnimalSearch, request: Request):
+    def search(
+        request: Request,
+        payload: Annotated[ImageRequest[AnimalSearch], Depends(image_request(AnimalSearch))],
+    ):
+        body = payload.parameters
         tenant = request.headers["x-tenant-id"]
-        vector, local, _ = request.app.state.animals.extract(body.image_base64)
+        vector, local, _ = request.app.state.animals.extract(payload.image)
         return {
             "matches": request.app.state.animal_store.query_animals(tenant, body, vector, local),
             "method": body.method,

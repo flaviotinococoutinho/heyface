@@ -4,8 +4,6 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.policies import IMAGE
-
 Name = Annotated[str, Field(min_length=1, max_length=160)]
 Sex = Literal["female", "male", "other", "unspecified"]
 
@@ -17,10 +15,6 @@ def normalize(value: str) -> str:
 
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True, allow_inf_nan=False)
-
-
-class ImageInput(StrictModel):
-    image_base64: Annotated[str, Field(min_length=4, max_length=IMAGE.max_encoded_characters)]
 
 
 def validate_tenant(value: str) -> str:

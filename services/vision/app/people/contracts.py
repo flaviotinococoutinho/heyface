@@ -4,7 +4,7 @@ from uuid import UUID
 
 from pydantic import Field, field_validator, model_validator
 
-from app.domain.contracts import ImageInput, Name, Sex, StrictModel
+from app.domain.contracts import Name, Sex, StrictModel
 from app.policies import SEARCH
 
 EARLIEST_BIRTH_YEAR = 1900
@@ -43,12 +43,12 @@ class Filters(StrictModel):
         return self
 
 
-class Enrollment(ImageInput):
+class Enrollment(StrictModel):
     person: Person
     person_id: UUID
 
 
-class Search(ImageInput):
+class Search(StrictModel):
     method: Literal["facenet", "sface"] = "facenet"
     filters: Filters = Field(default_factory=Filters)
     limit: Annotated[int, Field(ge=1, le=SEARCH.human_limit)] = SEARCH.default_limit

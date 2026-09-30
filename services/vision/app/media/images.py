@@ -9,17 +9,23 @@ from app.config import Settings
 from app.errors import DomainError
 
 
-def decode_image(encoded: str, settings: Settings) -> Image.Image:
+def decode_base64(encoded: str, max_bytes: int) -> bytes:
     if encoded.startswith("data:"):
         prefix, sep, encoded = encoded.partition(",")
         if not sep or prefix not in {"data:image/jpeg;base64", "data:image/png;base64"}:
             raise DomainError("invalid_image")
-    if len(encoded) > ((settings.max_image_bytes + 2) // 3) * 4:
+    if len(encoded) > ((max_bytes + 2) // 3) * 4:
         raise DomainError("image_too_large", 413)
     try:
         data = base64.b64decode(encoded, validate=True)
     except (ValueError, binascii.Error):
         raise DomainError("invalid_base64") from None
+    if not data or len(data) > max_bytes:
+        raise DomainError("image_too_large", 413)
+    return data
+
+
+def decode_image(data: bytes, settings: Settings) -> Image.Image:
     if not data or len(data) > settings.max_image_bytes:
         raise DomainError("image_too_large", 413)
     try:

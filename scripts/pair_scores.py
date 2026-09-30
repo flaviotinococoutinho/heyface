@@ -1,6 +1,5 @@
 """Build calibrated-fusion inputs from locally authorized, labeled image pairs."""
 
-import base64
 import csv
 from functools import lru_cache
 from pathlib import Path
@@ -27,7 +26,7 @@ def score_pairs(source: Path, destination: Path, root: Path):
         path = (root / name).resolve()
         if not path.is_relative_to(root.resolve()) or not path.is_file():
             raise ValueError("Images must exist inside the workspace")
-        return engine.extract(base64.b64encode(path.read_bytes()).decode())
+        return engine.extract(path.read_bytes())
 
     destination.parent.mkdir(parents=True, exist_ok=True)
     temporary = destination.with_suffix(destination.suffix + ".pending")

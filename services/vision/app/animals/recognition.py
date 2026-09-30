@@ -63,11 +63,11 @@ class AnimalRecognition:
             ]
         )
 
-    def extract(self, encoded: str):
+    def extract(self, content: bytes):
         if not self.lock.acquire(timeout=IMAGE.inference_queue_seconds):
             raise DomainError("vision_busy", 503)
         try:
-            image = decode_image(encoded, self.settings)
+            image = decode_image(content, self.settings)
             with self.torch.inference_mode():
                 vector = self.model(self.transform(image).unsqueeze(0))[0].cpu().numpy()
             vector = vector.astype(np.float32)

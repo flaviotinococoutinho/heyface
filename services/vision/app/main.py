@@ -7,13 +7,15 @@ from uuid import UUID
 from fastapi import Depends, FastAPI, Header, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException
 
 from app.animals.recognition import AnimalRecognition
 from app.animals.repository import AnimalRepository
 from app.animals.routes import router as animal_router
 from app.config import settings
-from app.domain.contracts import ImageInput, validate_tenant
+from app.domain.contracts import StrictModel, validate_tenant
 from app.errors import DomainError
+from app.media.requests import ImageRequest, image_request
 from app.people.contracts import Enrollment, ListPeople, Search
 from app.people.recognition import HumanRecognition
 from app.people.repository import PersonRepository
@@ -66,6 +68,11 @@ async def validation_error(request, error):
     return JSONResponse({"error": {"code": "invalid_request"}}, status_code=422)
 
 
+@app.exception_handler(HTTPException)
+async def malformed_transport(request, error):
+    return JSONResponse({"error": {"code": "invalid_request"}}, status_code=error.status_code)
+
+
 def tenant(
     authorization: Annotated[str | None, Header()] = None,
     x_tenant_id: Annotated[str | None, Header()] = None,
@@ -97,14 +104,23 @@ def ready(request: Request):
 
 
 @app.post("/v1/faces/analyze")
-def analyze(body: ImageInput, tenant: Tenant, request: Request):
-    _, face = request.app.state.engine.query(body.image_base64, "facenet")
+def analyze(
+    tenant: Tenant,
+    request: Request,
+    payload: Annotated[ImageRequest[StrictModel], Depends(image_request(StrictModel))],
+):
+    _, face = request.app.state.engine.query(payload.image, "facenet")
     return {"face": face}
 
 
 @app.post("/v1/people", status_code=201)
-def enroll(body: Enrollment, tenant: Tenant, request: Request):
-    vector, face = request.app.state.engine.enroll(body.image_base64)
+def enroll(
+    tenant: Tenant,
+    request: Request,
+    payload: Annotated[ImageRequest[Enrollment], Depends(image_request(Enrollment))],
+):
+    body = payload.parameters
+    vector, face = request.app.state.engine.enroll(payload.image)
     result = request.app.state.store.enroll(tenant, str(body.person_id), body.person, vector, face)
     return {"person": result}
 
@@ -115,9 +131,14 @@ def people(body: ListPeople, tenant: Tenant, request: Request):
 
 
 @app.post("/v1/search")
-def search(body: Search, tenant: Tenant, request: Request):
+def search(
+    tenant: Tenant,
+    request: Request,
+    payload: Annotated[ImageRequest[Search], Depends(image_request(Search))],
+):
+    body = payload.parameters
     start = time.perf_counter()
-    vector, face = request.app.state.engine.query(body.image_base64, body.method)
+    vector, face = request.app.state.engine.query(payload.image, body.method)
     inference_ms = (time.perf_counter() - start) * 1000
     query_start = time.perf_counter()
     result = request.app.state.store.search(tenant, vector, body)

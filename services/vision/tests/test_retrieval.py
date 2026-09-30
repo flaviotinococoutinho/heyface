@@ -16,7 +16,7 @@ def test_database_query_uses_filter_and_named_space_without_vectors_in_response(
     transport = Mock()
     transport.request.return_value = {"points": []}
     store = PersonRepository(transport, Settings().collection)
-    query = Search(image_base64="abcd", method="sface", exact=True, filters={"state": "ES"})
+    query = Search(method="sface", exact=True, filters={"state": "ES"})
     assert store.search("tenant-a", [1.0] * 128, query) == []
     body = transport.request.call_args.kwargs["json"]
     assert body["using"] == "sface"
