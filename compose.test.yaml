@@ -1,0 +1,28 @@
+services:
+  vision-tests:
+    profiles: [test]
+    build: {context: ./services/vision, target: test}
+    image: heyface/vision-tests:local
+    volumes: [./scripts:/scripts:ro]
+    command: [sh, -c, 'ruff check --config pyproject.toml app tests /scripts && pytest -q']
+  gateway-tests:
+    profiles: [test]
+    build: {context: ./services/gateway, target: test}
+    image: heyface/gateway-tests:local
+    command: [sh, -c, "vendor/bin/pint --test && vendor/bin/phpunit"]
+  tools:
+    profiles: [test]
+    image: heyface/vision:local
+    user: "${LOCAL_UID:-0}:${LOCAL_GID:-0}"
+    working_dir: /workspace
+    entrypoint: [python, scripts/tools.py]
+    environment:
+      QDRANT_API_KEY: ${QDRANT_API_KEY}
+      VISION_SERVICE_TOKEN: ${VISION_SERVICE_TOKEN}
+      QDRANT_URL: http://qdrant:6333
+      PYTHONPATH: /app
+      API_URL: http://web:8080/api/v1
+    volumes:
+      - .:/workspace
+      - models:/models:ro
+    networks: [backend]

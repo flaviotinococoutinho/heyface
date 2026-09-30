@@ -1,0 +1,115 @@
+name: heyface
+
+services:
+  models:
+    image: python:3.12-slim-bookworm
+    command: [python, /scripts/download_models.py, /manifest.json, /models]
+    volumes:
+      - ./scripts/download_models.py:/scripts/download_models.py:ro
+      - ./models/manifest.json:/manifest.json:ro
+      - models:/models
+    restart: "no"
+
+  qdrant:
+    image: qdrant/qdrant:v1.19.1
+    environment:
+      QDRANT__SERVICE__API_KEY: ${QDRANT_API_KEY:?Run ./heyface up first}
+      QDRANT__TELEMETRY_DISABLED: "true"
+    volumes:
+      - vectors:/qdrant/storage
+      - snapshots:/qdrant/snapshots
+    networks: [backend]
+    restart: unless-stopped
+
+  redis:
+    image: redis:8-alpine
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Run ./heyface up first}
+    command: [sh, -c, 'exec redis-server --requirepass "$$REDIS_PASSWORD" --maxmemory 64mb --maxmemory-policy noeviction --save "" --appendonly no']
+    networks: [backend]
+    healthcheck:
+      test: [CMD-SHELL, 'REDISCLI_AUTH="$$REDIS_PASSWORD" redis-cli ping | grep -q PONG']
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  vision:
+    build:
+      context: ./services/vision
+      target: runtime
+    image: heyface/vision:local
+    environment:
+      QDRANT_URL: http://qdrant:6333
+      QDRANT_API_KEY: ${QDRANT_API_KEY}
+      VISION_SERVICE_TOKEN: ${VISION_SERVICE_TOKEN}
+    volumes:
+      - models:/models:ro
+      - ./.local/calibrations:/calibrations:ro
+    networks: [backend]
+    depends_on:
+      models: {condition: service_completed_successfully}
+      qdrant: {condition: service_started}
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/ready', timeout=4)"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 30s
+    restart: unless-stopped
+
+  gateway:
+    build:
+      context: ./services/gateway
+      target: runtime
+    image: heyface/gateway:local
+    environment:
+      APP_ENV: production
+      APP_KEY: ${APP_KEY}
+      VISION_URL: http://vision:8000
+      VISION_SERVICE_TOKEN: ${VISION_SERVICE_TOKEN}
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      OCTANE_WORKERS: ${OCTANE_WORKERS:-2}
+      REQUESTS_PER_MINUTE: ${REQUESTS_PER_MINUTE:-120}
+    volumes:
+      - ./.secrets/access:/run/heyface:ro
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    networks: [backend]
+    depends_on:
+      vision: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, php, -r, "exit(@file_get_contents('http://localhost:8000/api/v1/health/live') === false ? 1 : 0);"]
+      interval: 10s
+      timeout: 4s
+      retries: 12
+    restart: unless-stopped
+
+  web:
+    build: ./web
+    image: heyface/web:local
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    ports:
+      - "127.0.0.1:${HTTP_PORT:-8088}:8080"
+    networks: [backend, frontend]
+    depends_on:
+      gateway: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:8080/]
+      interval: 10s
+      timeout: 3s
+      retries: 8
+    restart: unless-stopped
+
+volumes:
+  models:
+  vectors:
+  snapshots:
+
+networks:
+  frontend: {}
+  backend:
+    internal: true
