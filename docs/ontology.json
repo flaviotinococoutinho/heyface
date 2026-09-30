@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "concepts": {
+    "Workspace": {"identity": "credential tenant", "contains": ["Person", "Animal", "Calibration"]},
+    "Principal": {"attributes": ["tenant", "credentialId", "capabilities"]},
+    "Person": {"attributes": ["name", "sex", "birth_date", "state", "city"], "has": ["Representation", "FaceObservation"]},
+    "Animal": {"attributes": ["name", "species", "sex", "breed", "color", "pattern"], "has": ["Representation", "LocalDescriptors"]},
+    "Representation": {"defined_by": ["VectorSpace", "preprocessing version"], "invariants": ["finite", "dimension matches space", "unit norm"]},
+    "FaceObservation": {"attributes": ["box", "landmarks", "landmark_order", "image_size", "detection_confidence", "sharpness"]},
+    "Candidate": {"ordered_by": "similarity", "does_not_assert": "identity"},
+    "Calibration": {"scoped_by": ["workspace", "species", "representation version"], "built_from": "identity-disjoint labeled pairs"}
+  }
+}
