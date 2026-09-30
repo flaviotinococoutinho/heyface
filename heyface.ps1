@@ -3,6 +3,12 @@ $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
 function Invoke-Docker { & docker @args; if ($LASTEXITCODE -ne 0) { throw "Docker failed ($LASTEXITCODE)" } }
 switch ($Task) {
+    "try" {
+        & "$PSScriptRoot/heyface.ps1" up
+        & "$PSScriptRoot/heyface.ps1" demo
+        Write-Host "Conecte seu acesso no navegador com esta chave local:"
+        & "$PSScriptRoot/heyface.ps1" token
+    }
     { $_ -in "init", "up" } {
         Invoke-Docker run --rm -v "${PSScriptRoot}:/workspace" -w /workspace python:3.12-slim-bookworm python scripts/bootstrap.py
         if ($Task -eq "up") {
@@ -17,6 +23,22 @@ switch ($Task) {
     "status" { Invoke-Docker compose ps }
     "logs" { Invoke-Docker compose logs --tail=100 @Rest }
     "token" { Get-Content .secrets/demo-token.txt }
+    { $_ -in "contract", "contract-build" } {
+        Invoke-Docker build --target test -t heyface/vision-tests:local services/vision
+        if ($Task -eq "contract-build") {
+            Invoke-Docker compose -f compose.yaml -f compose.test.yaml --profile test run --rm --entrypoint python contract-tools scripts/build_contract.py
+        } else {
+            Invoke-Docker compose -f compose.yaml -f compose.test.yaml --profile test run --rm contract-tools
+        }
+    }
+    "client-test" {
+        Invoke-Docker build -t heyface/dart-tests:local sdk/dart
+        Invoke-Docker run --rm heyface/dart-tests:local
+    }
+    "client-smoke" {
+        & "$PSScriptRoot/heyface.ps1" demo
+        Invoke-Docker compose -f compose.yaml -f compose.test.yaml --profile test run --rm client-example
+    }
     "test" {
         Invoke-Docker build --target test -t heyface/vision-tests:local services/vision
         Invoke-Docker compose -f compose.yaml -f compose.test.yaml --profile test run --rm vision-tests
@@ -26,5 +48,5 @@ switch ($Task) {
     { $_ -in "demo", "smoke", "benchmark", "backup", "calibrate", "score-pairs" } {
         Invoke-Docker compose -f compose.yaml -f compose.test.yaml --profile test run --rm tools $Task @Rest
     }
-    default { throw "Use up, init, stop, status, logs, token, test, demo, smoke, benchmark, backup, calibrate or score-pairs." }
+    default { throw "Use try, up, init, stop, status, logs, token, test, demo, smoke, contract, contract-build, client-test, client-smoke, benchmark, backup, calibrate or score-pairs." }
 }

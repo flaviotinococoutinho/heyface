@@ -3,8 +3,9 @@ services:
     profiles: [test]
     build: {context: ./services/vision, target: test}
     image: heyface/vision-tests:local
-    volumes: [./scripts:/scripts:ro]
-    command: [sh, -c, 'ruff check --config pyproject.toml app tests /scripts && pytest -q']
+    volumes: [./scripts:/scripts:ro, .:/workspace:ro]
+    environment: {PYTHONPATH: /app}
+    command: [sh, -c, 'ruff check --config pyproject.toml app tests /scripts && pytest -q && python /workspace/scripts/build_contract.py --check']
   gateway-tests:
     profiles: [test]
     build: {context: ./services/gateway, target: test}
@@ -26,3 +27,22 @@ services:
       - .:/workspace
       - models:/models:ro
     networks: [backend]
+  contract-tools:
+    profiles: [test]
+    image: heyface/vision-tests:local
+    user: "${LOCAL_UID:-0}:${LOCAL_GID:-0}"
+    working_dir: /workspace
+    entrypoint: [python, scripts/check_contract.py]
+    environment:
+      PYTHONPATH: /workspace/services/vision
+      API_URL: http://web:8080/api/v1
+    volumes: [.:/workspace]
+    networks: [backend]
+  client-example:
+    profiles: [test]
+    image: heyface/dart-tests:local
+    working_dir: /workspace
+    entrypoint: [dart, --packages=/client/.dart_tool/package_config.json, /client/example/search.dart]
+    environment: {HEYFACE_API_URL: "http://localhost:8080/api/v1/"}
+    volumes: [.:/workspace:ro]
+    network_mode: service:web

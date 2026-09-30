@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
       - name: Inspect publication
@@ -21,8 +21,12 @@ jobs:
         run: ./heyface up
       - name: Unit and boundary tests
         run: ./heyface test
-      - name: Real inference and tenant isolation
-        run: ./heyface smoke
+      - name: Real inference, tenant isolation and public contract
+        run: ./heyface contract
+      - name: Dart client checks
+        run: ./heyface client-test
+      - name: Dart client against the running API
+        run: ./heyface client-smoke
       - name: Report service status
         if: always()
         run: ./heyface status

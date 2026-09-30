@@ -20,9 +20,14 @@ COLLECTIONS = ("heyface_people_v1", "heyface_animals_dinov2_sift_v1")
 DEMO_NAMESPACE = uuid.UUID("8b916070-ac91-4bc7-953b-c0fe03465b29")
 
 
-def client(token=None):
+def client(token=None, response_hooks=()):
     token = token or (ROOT / ".secrets/demo-token.txt").read_text().strip()
-    return httpx.Client(base_url=API_URL, headers={"Authorization": "Bearer " + token}, timeout=90)
+    return httpx.Client(
+        base_url=API_URL,
+        headers={"Authorization": "Bearer " + token},
+        timeout=90,
+        event_hooks={"response": list(response_hooks)},
+    )
 
 
 def image(name):
@@ -58,7 +63,7 @@ def demo():
     )
 
 
-def smoke():
+def smoke(response_hooks=()):
     registry_path = ROOT / ".secrets/access/keys.json"
     credentials = {name: secrets.token_urlsafe(32) for name in ("first", "second", "reader")}
     hashes = {
@@ -82,7 +87,9 @@ def smoke():
     checks = []
     identity, animal_id = str(uuid.uuid4()), str(uuid.uuid4())
     calibration_path = ROOT / ".local/calibrations" / tenant / "cat.json"
-    first, second, reader = [client(credentials[name]) for name in ("first", "second", "reader")]
+    first, second, reader = [
+        client(credentials[name], response_hooks) for name in ("first", "second", "reader")
+    ]
 
     def check(condition, name):
         if not condition:
@@ -94,6 +101,20 @@ def smoke():
         check(httpx.get(API_URL + "/people").status_code == 401, "authentication required")
         check(reader.post("/people", json={}).status_code == 403, "read-only access")
         check(first.get("/health/ready").status_code == 200, "services and models ready")
+        check(
+            first.get("/capabilities").json()["preferred_upload"] == "multipart/form-data",
+            "client capabilities",
+        )
+        check(first.get("/methods").status_code == 200, "method catalog")
+        problem = reader.post(
+            "/people", json={}, headers={"Accept": "application/problem+json, application/json"}
+        )
+        check(
+            problem.status_code == 403
+            and problem.json()["request_id"] == problem.headers["x-request-id"],
+            "problem details and trace",
+        )
+
         payload = {
             "person_id": identity,
             "image_base64": image("heyface.png"),
@@ -172,6 +193,22 @@ def smoke():
             == identity,
             "birth date range",
         )
+        check(first.get("/people/" + identity).status_code == 200, "registered person contract")
+        binary = (ROOT / "web/public/brand/heyface.png").read_bytes()
+        canonical = {
+            "image": ("photo.png", binary, "image/png"),
+            "metadata": (None, '{"method":"sface","filters":{}}'),
+        }
+        canonical_result = first.post("/search", files=canonical)
+        check(
+            canonical_result.status_code == 200 and bool(canonical_result.json()["matches"]),
+            "canonical binary and metadata search",
+        )
+        analysis = first.post(
+            "/faces/analyze",
+            files={"image": ("photo.png", binary, "image/png"), "metadata": (None, "{}")},
+        )
+        check(analysis.status_code == 200, "binary face observation")
         for files in (
             {"image_base64": (None, payload["image_base64"])},
             {

@@ -9,6 +9,10 @@ build_runtime() {
   docker build -t heyface/web:local web
 }
 case "$task" in
+  try) ./heyface up
+       ./heyface demo
+       printf '\nConecte seu acesso no navegador com esta chave local:\n'
+       ./heyface token ;;
   up|init)
     docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/workspace" -w /workspace python:3.12-slim-bookworm python scripts/bootstrap.py
     if [ "$task" = up ]; then
@@ -21,11 +25,24 @@ case "$task" in
   status) docker compose ps ;;
   logs) docker compose logs --tail=100 "$@" ;;
   token) cat .secrets/demo-token.txt ;;
+  contract|contract-build)
+    docker build --target test -t heyface/vision-tests:local services/vision
+    if [ "$task" = contract-build ]; then
+      docker compose -f compose.yaml -f compose.test.yaml --profile test run --rm --entrypoint python contract-tools scripts/build_contract.py
+    else
+      docker compose -f compose.yaml -f compose.test.yaml --profile test run --rm contract-tools
+    fi ;;
+  client-test)
+    docker build -t heyface/dart-tests:local sdk/dart
+    docker run --rm heyface/dart-tests:local ;;
+  client-smoke)
+    ./heyface demo
+    docker compose -f compose.yaml -f compose.test.yaml --profile test run --rm client-example ;;
   test) docker build --target test -t heyface/vision-tests:local services/vision
         docker compose -f compose.yaml -f compose.test.yaml --profile test run --rm vision-tests
         docker build --target test -t heyface/gateway-tests:local services/gateway
         docker compose -f compose.yaml -f compose.test.yaml --profile test run --rm gateway-tests ;;
   demo|smoke|benchmark|backup|calibrate|score-pairs)
     docker compose -f compose.yaml -f compose.test.yaml --profile test run --rm tools "$task" "$@" ;;
-  *) printf 'Usage: ./heyface [up|init|stop|status|logs|token|test|demo|smoke|benchmark|backup|calibrate|score-pairs]\n'; exit 2 ;;
+  *) printf 'Usage: ./heyface [try|up|init|stop|status|logs|token|test|demo|smoke|contract|contract-build|client-test|client-smoke|benchmark|backup|calibrate|score-pairs]\n'; exit 2 ;;
 esac

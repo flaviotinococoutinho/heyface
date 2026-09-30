@@ -46,6 +46,8 @@ services:
     volumes:
       - models:/models:ro
       - ./.local/calibrations:/calibrations:ro
+    tmpfs:
+      - /tmp:size=128m,mode=1777
     networks: [backend]
     depends_on:
       models: {condition: service_completed_successfully}
