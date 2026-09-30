@@ -1,5 +1,6 @@
 import json
 from dataclasses import dataclass
+from functools import cached_property
 from itertools import pairwise
 from math import isfinite
 from pathlib import Path
@@ -32,10 +33,14 @@ class CalibrationCurve:
     def from_document(cls, document):
         return cls(tuple(map(float, document["x"])), tuple(map(float, document["y"])))
 
+    @cached_property
+    def _interpolator(self):
+        return PchipInterpolator(self.x, self.y)
+
     def score(self, raw: float) -> float:
         if not isfinite(raw):
             raise ValueError("Similarity must be finite")
-        value = PchipInterpolator(self.x, self.y)(np.clip(raw, self.x[0], self.x[-1]))
+        value = self._interpolator(np.clip(raw, self.x[0], self.x[-1]))
         return float(np.clip(value, 0, 1))
 
 

@@ -9,7 +9,7 @@ from sklearn.isotonic import IsotonicRegression
 from sklearn.metrics import brier_score_loss, roc_auc_score
 
 from app.domain.representations import ANIMAL
-from app.retrieval.calibration import calibrated_score
+from app.retrieval.calibration import CalibrationCurve
 
 TUNING_SEED = 42
 MAX_GENERATIONS = 40
@@ -95,12 +95,14 @@ def calibrate(rows: list[dict], species: str) -> dict:
         for column in columns
     ]
 
+    interpolators = [CalibrationCurve.from_document(curve) for curve in curves]
+
     def matrix(group):
         return np.array(
             [
                 [
-                    calibrated_score(float(row[column]), curve)
-                    for column, curve in zip(columns, curves, strict=True)
+                    curve.score(float(row[column]))
+                    for column, curve in zip(columns, interpolators, strict=True)
                 ]
                 for row in group
             ]
