@@ -10,11 +10,16 @@ use App\People\UseCases\RemovePerson;
 use App\People\UseCases\SearchPeople;
 use App\Recognition\UseCases\AnalyzeFace;
 use App\Recognition\UseCases\CheckReadiness;
+use App\Recognition\UseCases\GetCapabilities;
 use App\Recognition\UseCases\ListMethods;
 use Illuminate\Support\Facades\Route;
 
 Route::get('health/live', fn () => ['status' => 'ok']);
+Route::get('openapi.json', fn () => response(
+    file_get_contents(resource_path('contracts/openapi.json')), 200, ['Content-Type' => 'application/json']
+));
 Route::middleware('throttle:api')->group(function (): void {
+    Route::get('capabilities', GetCapabilities::class);
     Route::get('health/ready', CheckReadiness::class);
     Route::get('methods', ListMethods::class);
     Route::post('people', EnrollPerson::class);

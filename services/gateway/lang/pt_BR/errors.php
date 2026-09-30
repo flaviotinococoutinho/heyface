@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'server_error' => 'Não foi possível concluir. Use o identificador da requisição para relatar a falha.',
     'unauthorized' => 'Informe uma chave de acesso válida.',
     'forbidden' => 'Esta chave não tem permissão para esta operação.',
     'not_found' => 'Recurso não encontrado.',
@@ -9,6 +10,7 @@ return [
     'invalid_base64' => 'A imagem em base64 é inválida.',
     'invalid_image' => 'Não foi possível ler a imagem. Envie um JPEG ou PNG válido.',
     'unsupported_image' => 'Use uma imagem JPEG ou PNG.',
+    'unsupported_media_type' => 'Envie a imagem usando multipart/form-data ou JSON.',
     'image_too_large' => 'Use uma imagem de até 5 MB e 16 milhões de pixels.',
     'no_face' => 'Nenhum rosto foi encontrado. Use uma foto frontal e bem iluminada.',
     'multiple_faces' => 'A imagem contém mais de um rosto. Recorte apenas uma pessoa.',

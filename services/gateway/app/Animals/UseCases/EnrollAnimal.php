@@ -18,8 +18,7 @@ final readonly class EnrollAnimal
     public function __invoke(Request $request)
     {
         $principal = RequireCapability::for($request, 'write');
-        $data = $this->images->decode($request);
-        $data['animal_id'] ??= (string) Str::uuid();
+        $data = $this->images->decode($request)->withDefaultIdentifier('animal_id', (string) Str::uuid());
 
         return ResponsePresenter::present($this->vision->send($principal, 'POST', '/v1/animals', $data));
     }

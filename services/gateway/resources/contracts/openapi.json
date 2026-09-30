@@ -1,0 +1,3099 @@
+{
+  "openapi": "3.1.2",
+  "info": {
+    "title": "Heyface API",
+    "version": "1.1.0",
+    "description": "Busca visual de pessoas e animais cadastrados. Scores ordenam candidatos; não confirmam identidade. UUIDs de cadastro pertencem ao cliente e são isolados por espaço de trabalho. Repetir o UUID substitui o registro. A API não armazena a imagem enviada."
+  },
+  "servers": [
+    {
+      "url": "/api/v1"
+    }
+  ],
+  "security": [
+    {
+      "accessKey": []
+    }
+  ],
+  "paths": {
+    "/health/live": {
+      "get": {
+        "operationId": "checkLiveness",
+        "summary": "Consultar processo do gateway",
+        "tags": [
+          "health"
+        ],
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "schema": {
+              "enum": [
+                "pt-BR",
+                "en"
+              ],
+              "default": "pt-BR"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operação concluída.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador criado pelo gateway; use ao relatar uma falha.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Content-Language": {
+                "schema": {
+                  "enum": [
+                    "pt-BR",
+                    "en"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Erro estável. Prefira Accept: application/problem+json, application/json. Falhas anteriores ao gateway podem ter outro corpo; verifique o status HTTP.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador criado pelo gateway; use ao relatar uma falha.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Content-Language": {
+                "schema": {
+                  "enum": [
+                    "pt-BR",
+                    "en"
+                  ]
+                }
+              },
+              "Retry-After": {
+                "description": "Espera mínima em segundos para 429/503, quando presente.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyError"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "operationId": "checkReadiness",
+        "summary": "Consultar serviços de imagem e busca",
+        "tags": [
+          "health"
+        ],
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "schema": {
+              "enum": [
+                "pt-BR",
+                "en"
+              ],
+              "default": "pt-BR"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operação concluída.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador criado pelo gateway; use ao relatar uma falha.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Content-Language": {
+                "schema": {
+                  "enum": [
+                    "pt-BR",
+                    "en"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Erro estável. Prefira Accept: application/problem+json, application/json. Falhas anteriores ao gateway podem ter outro corpo; verifique o status HTTP.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador criado pelo gateway; use ao relatar uma falha.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Content-Language": {
+                "schema": {
+                  "enum": [
+                    "pt-BR",
+                    "en"
+                  ]
+                }
+              },
+              "Retry-After": {
+                "description": "Espera mínima em segundos para 429/503, quando presente.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyError"
+                }
+              }
+            }
+          }
+        },
+        "x-required-capability": "read"
+      }
+    },
+    "/capabilities": {
+      "get": {
+        "operationId": "getCapabilities",
+        "summary": "Consultar limites e permissões desta chave",
+        "tags": [
+          "capabilities"
+        ],
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "schema": {
+              "enum": [
+                "pt-BR",
+                "en"
+              ],
+              "default": "pt-BR"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operação concluída.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador criado pelo gateway; use ao relatar uma falha.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Content-Language": {
+                "schema": {
+                  "enum": [
+                    "pt-BR",
+                    "en"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Capabilities"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Erro estável. Prefira Accept: application/problem+json, application/json. Falhas anteriores ao gateway podem ter outro corpo; verifique o status HTTP.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador criado pelo gateway; use ao relatar uma falha.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Content-Language": {
+                "schema": {
+                  "enum": [
+                    "pt-BR",
+                    "en"
+                  ]
+                }
+              },
+              "Retry-After": {
+                "description": "Espera mínima em segundos para 429/503, quando presente.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyError"
+                }
+              }
+            }
+          }
+        },
+        "x-required-capability": "read"
+      }
+    },
+    "/methods": {
+      "get": {
+        "operationId": "listMethods",
+        "summary": "Consultar métodos de comparação",
+        "tags": [
+          "methods"
+        ],
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "schema": {
+              "enum": [
+                "pt-BR",
+                "en"
+              ],
+              "default": "pt-BR"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operação concluída.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador criado pelo gateway; use ao relatar uma falha.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Content-Language": {
+                "schema": {
+                  "enum": [
+                    "pt-BR",
+                    "en"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Methods"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Erro estável. Prefira Accept: application/problem+json, application/json. Falhas anteriores ao gateway podem ter outro corpo; verifique o status HTTP.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador criado pelo gateway; use ao relatar uma falha.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Content-Language": {
+                "schema": {
+                  "enum": [
+                    "pt-BR",
+                    "en"
+                  ]
+                }
+              },
+              "Retry-After": {
+                "description": "Espera mínima em segundos para 429/503, quando presente.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyError"
+                }
+              }
+            }
+          }
+        },
+        "x-required-capability": "read"
+      }
+    },
+    "/people": {
+      "post": {
+        "operationId": "enrollPerson",
+        "summary": "Cadastrar ou substituir pessoa pelo UUID",
+        "tags": [
+          "people"
+        ],
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "schema": {
+              "enum": [
+                "pt-BR",
+                "en"
+              ],
+              "default": "pt-BR"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Operação concluída.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador criado pelo gateway; use ao relatar uma falha.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Content-Language": {
+                "schema": {
+                  "enum": [
+                    "pt-BR",
+                    "en"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonResult"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Erro estável. Prefira Accept: application/problem+json, application/json. Falhas anteriores ao gateway podem ter outro corpo; verifique o status HTTP.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador criado pelo gateway; use ao relatar uma falha.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Content-Language": {
+                "schema": {
+                  "enum": [
+                    "pt-BR",
+                    "en"
+                  ]
+                }
+              },
+              "Retry-After": {
+                "description": "Espera mínima em segundos para 429/503, quando presente.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "image": {
+                        "type": "string",
+                        "format": "binary",
+                        "description": "JPEG ou PNG; até 5242880 bytes e 16000000 pixels."
+                      },
+                      "metadata": {
+                        "type": "string",
+                        "maxLength": 65536,
+                        "contentMediaType": "application/json",
+                        "contentSchema": {
+                          "$ref": "#/components/schemas/Enrollment"
+                        },
+                        "description": "JSON serializado em campo textual UTF-8, até 64 KiB."
+                      }
+                    },
+                    "required": [
+                      "image",
+                      "metadata"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "person": {
+                        "type": "string",
+                        "contentMediaType": "application/json",
+                        "contentSchema": {
+                          "$ref": "#/components/schemas/Person"
+                        }
+                      },
+                      "person_id": {
+                        "format": "uuid",
+                        "title": "Person Id",
+                        "type": "string",
+                        "description": "Prefira UUID criado pelo cliente para repetição estável. Na ausência, o gateway gera um UUID novo."
+                      },
+                      "image": {
+                        "type": "string",
+                        "format": "binary",
+                        "description": "JPEG ou PNG; até 5242880 bytes e 16000000 pixels."
+                      }
+                    },
+                    "required": [
+                      "person",
+                      "image"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "person": {
+                        "type": "string",
+                        "contentMediaType": "application/json",
+                        "contentSchema": {
+                          "$ref": "#/components/schemas/Person"
+                        }
+                      },
+                      "person_id": {
+                        "format": "uuid",
+                        "title": "Person Id",
+                        "type": "string",
+                        "description": "Prefira UUID criado pelo cliente para repetição estável. Na ausência, o gateway gera um UUID novo."
+                      },
+                      "image_base64": {
+                        "type": "string",
+                        "minLength": 4,
+                        "maxLength": 7000000,
+                        "description": "Base64 ou data URI JPEG/PNG. Prefira image binária em multipart."
+                      }
+                    },
+                    "required": [
+                      "person",
+                      "image_base64"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            },
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "person": {
+                    "$ref": "#/components/schemas/Person"
+                  },
+                  "person_id": {
+                    "format": "uuid",
+                    "title": "Person Id",
+                    "type": "string",
+                    "description": "Prefira UUID criado pelo cliente para repetição estável. Na ausência, o gateway gera um UUID novo."
+                  },
+                  "image_base64": {
+                    "type": "string",
+                    "minLength": 4,
+                    "maxLength": 7000000,
+                    "description": "Base64 ou data URI JPEG/PNG. Prefira image binária em multipart."
+                  }
+                },
+                "required": [
+                  "person",
+                  "image_base64"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "x-required-capability": "write"
+      },
+      "get": {
+        "operationId": "listPeople",
+        "summary": "Consultar pessoas com filtros e cursor",
+        "tags": [
+          "people"
+        ],
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "schema": {
+              "enum": [
+                "pt-BR",
+                "en"
+              ],
+              "default": "pt-BR"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 160,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Name"
+            }
+          },
+          {
+            "name": "sex",
+            "in": "query",
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "female",
+                    "male",
+                    "other",
+                    "unspecified"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Sex"
+            }
+          },
+          {
+            "name": "birth_date",
+            "in": "query",
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Birth Date"
+            }
+          },
+          {
+            "name": "birth_date_from",
+            "in": "query",
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Birth Date From"
+            }
+          },
+          {
+            "name": "birth_date_to",
+            "in": "query",
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Birth Date To"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 80,
+                  "minLength": 2,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "State"
+            }
+          },
+          {
+            "name": "city",
+            "in": "query",
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 120,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "City"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operação concluída.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador criado pelo gateway; use ao relatar uma falha.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Content-Language": {
+                "schema": {
+                  "enum": [
+                    "pt-BR",
+                    "en"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PeoplePage"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Erro estável. Prefira Accept: application/problem+json, application/json. Falhas anteriores ao gateway podem ter outro corpo; verifique o status HTTP.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador criado pelo gateway; use ao relatar uma falha.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Content-Language": {
+                "schema": {
+                  "enum": [
+                    "pt-BR",
+                    "en"
+                  ]
+                }
+              },
+              "Retry-After": {
+                "description": "Espera mínima em segundos para 429/503, quando presente.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyError"
+                }
+              }
+            }
+          }
+        },
+        "x-required-capability": "read"
+      }
+    },
+    "/people/{id}": {
+      "get": {
+        "operationId": "getPerson",
+        "summary": "Consultar um cadastro de pessoa",
+        "tags": [
+          "people"
+        ],
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "schema": {
+              "enum": [
+                "pt-BR",
+                "en"
+              ],
+              "default": "pt-BR"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operação concluída.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador criado pelo gateway; use ao relatar uma falha.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Content-Language": {
+                "schema": {
+                  "enum": [
+                    "pt-BR",
+                    "en"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonResult"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Erro estável. Prefira Accept: application/problem+json, application/json. Falhas anteriores ao gateway podem ter outro corpo; verifique o status HTTP.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador criado pelo gateway; use ao relatar uma falha.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Content-Language": {
+                "schema": {
+                  "enum": [
+                    "pt-BR",
+                    "en"
+                  ]
+                }
+              },
+              "Retry-After": {
+                "description": "Espera mínima em segundos para 429/503, quando presente.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyError"
+                }
+              }
+            }
+          }
+        },
+        "x-required-capability": "read"
+      },
+      "delete": {
+        "operationId": "removePerson",
+        "summary": "Excluir pessoa e representações",
+        "tags": [
+          "people"
+        ],
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "schema": {
+              "enum": [
+                "pt-BR",
+                "en"
+              ],
+              "default": "pt-BR"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Operação concluída.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador criado pelo gateway; use ao relatar uma falha.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Content-Language": {
+                "schema": {
+                  "enum": [
+                    "pt-BR",
+                    "en"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Erro estável. Prefira Accept: application/problem+json, application/json. Falhas anteriores ao gateway podem ter outro corpo; verifique o status HTTP.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador criado pelo gateway; use ao relatar uma falha.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Content-Language": {
+                "schema": {
+                  "enum": [
+                    "pt-BR",
+                    "en"
+                  ]
+                }
+              },
+              "Retry-After": {
+                "description": "Espera mínima em segundos para 429/503, quando presente.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyError"
+                }
+              }
+            }
+          }
+        },
+        "x-required-capability": "delete"
+      }
+    },
+    "/search": {
+      "post": {
+        "operationId": "searchPeople",
+        "summary": "Ordenar candidatos humanos por similaridade",
+        "tags": [
+          "search"
+        ],
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "schema": {
+              "enum": [
+                "pt-BR",
+                "en"
+              ],
+              "default": "pt-BR"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operação concluída.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador criado pelo gateway; use ao relatar uma falha.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Content-Language": {
+                "schema": {
+                  "enum": [
+                    "pt-BR",
+                    "en"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PeopleSearchResult"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Erro estável. Prefira Accept: application/problem+json, application/json. Falhas anteriores ao gateway podem ter outro corpo; verifique o status HTTP.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador criado pelo gateway; use ao relatar uma falha.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Content-Language": {
+                "schema": {
+                  "enum": [
+                    "pt-BR",
+                    "en"
+                  ]
+                }
+              },
+              "Retry-After": {
+                "description": "Espera mínima em segundos para 429/503, quando presente.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "image": {
+                        "type": "string",
+                        "format": "binary",
+                        "description": "JPEG ou PNG; até 5242880 bytes e 16000000 pixels."
+                      },
+                      "metadata": {
+                        "type": "string",
+                        "maxLength": 65536,
+                        "contentMediaType": "application/json",
+                        "contentSchema": {
+                          "$ref": "#/components/schemas/Search"
+                        },
+                        "description": "JSON serializado em campo textual UTF-8, até 64 KiB."
+                      }
+                    },
+                    "required": [
+                      "image",
+                      "metadata"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "method": {
+                        "default": "facenet",
+                        "enum": [
+                          "facenet",
+                          "sface"
+                        ],
+                        "title": "Method",
+                        "type": "string"
+                      },
+                      "filters": {
+                        "type": "string",
+                        "contentMediaType": "application/json",
+                        "contentSchema": {
+                          "$ref": "#/components/schemas/Filters"
+                        }
+                      },
+                      "limit": {
+                        "default": 10,
+                        "maximum": 50,
+                        "minimum": 1,
+                        "title": "Limit",
+                        "type": "integer"
+                      },
+                      "min_score": {
+                        "anyOf": [
+                          {
+                            "maximum": 1,
+                            "minimum": -1,
+                            "type": "number"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "default": null,
+                        "title": "Min Score"
+                      },
+                      "exact": {
+                        "default": false,
+                        "title": "Exact",
+                        "type": "boolean"
+                      },
+                      "hnsw_ef": {
+                        "default": 128,
+                        "maximum": 1024,
+                        "minimum": 32,
+                        "title": "Hnsw Ef",
+                        "type": "integer"
+                      },
+                      "image": {
+                        "type": "string",
+                        "format": "binary",
+                        "description": "JPEG ou PNG; até 5242880 bytes e 16000000 pixels."
+                      }
+                    },
+                    "required": [
+                      "image"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "method": {
+                        "default": "facenet",
+                        "enum": [
+                          "facenet",
+                          "sface"
+                        ],
+                        "title": "Method",
+                        "type": "string"
+                      },
+                      "filters": {
+                        "type": "string",
+                        "contentMediaType": "application/json",
+                        "contentSchema": {
+                          "$ref": "#/components/schemas/Filters"
+                        }
+                      },
+                      "limit": {
+                        "default": 10,
+                        "maximum": 50,
+                        "minimum": 1,
+                        "title": "Limit",
+                        "type": "integer"
+                      },
+                      "min_score": {
+                        "anyOf": [
+                          {
+                            "maximum": 1,
+                            "minimum": -1,
+                            "type": "number"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "default": null,
+                        "title": "Min Score"
+                      },
+                      "exact": {
+                        "default": false,
+                        "title": "Exact",
+                        "type": "boolean"
+                      },
+                      "hnsw_ef": {
+                        "default": 128,
+                        "maximum": 1024,
+                        "minimum": 32,
+                        "title": "Hnsw Ef",
+                        "type": "integer"
+                      },
+                      "image_base64": {
+                        "type": "string",
+                        "minLength": 4,
+                        "maxLength": 7000000,
+                        "description": "Base64 ou data URI JPEG/PNG. Prefira image binária em multipart."
+                      }
+                    },
+                    "required": [
+                      "image_base64"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            },
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "method": {
+                    "default": "facenet",
+                    "enum": [
+                      "facenet",
+                      "sface"
+                    ],
+                    "title": "Method",
+                    "type": "string"
+                  },
+                  "filters": {
+                    "$ref": "#/components/schemas/Filters"
+                  },
+                  "limit": {
+                    "default": 10,
+                    "maximum": 50,
+                    "minimum": 1,
+                    "title": "Limit",
+                    "type": "integer"
+                  },
+                  "min_score": {
+                    "anyOf": [
+                      {
+                        "maximum": 1,
+                        "minimum": -1,
+                        "type": "number"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "title": "Min Score"
+                  },
+                  "exact": {
+                    "default": false,
+                    "title": "Exact",
+                    "type": "boolean"
+                  },
+                  "hnsw_ef": {
+                    "default": 128,
+                    "maximum": 1024,
+                    "minimum": 32,
+                    "title": "Hnsw Ef",
+                    "type": "integer"
+                  },
+                  "image_base64": {
+                    "type": "string",
+                    "minLength": 4,
+                    "maxLength": 7000000,
+                    "description": "Base64 ou data URI JPEG/PNG. Prefira image binária em multipart."
+                  }
+                },
+                "required": [
+                  "image_base64"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "x-required-capability": "read"
+      }
+    },
+    "/faces/analyze": {
+      "post": {
+        "operationId": "analyzeFace",
+        "summary": "Examinar observação do rosto",
+        "tags": [
+          "faces"
+        ],
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "schema": {
+              "enum": [
+                "pt-BR",
+                "en"
+              ],
+              "default": "pt-BR"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operação concluída.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador criado pelo gateway; use ao relatar uma falha.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Content-Language": {
+                "schema": {
+                  "enum": [
+                    "pt-BR",
+                    "en"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FaceResult"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Erro estável. Prefira Accept: application/problem+json, application/json. Falhas anteriores ao gateway podem ter outro corpo; verifique o status HTTP.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador criado pelo gateway; use ao relatar uma falha.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Content-Language": {
+                "schema": {
+                  "enum": [
+                    "pt-BR",
+                    "en"
+                  ]
+                }
+              },
+              "Retry-After": {
+                "description": "Espera mínima em segundos para 429/503, quando presente.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "image": {
+                        "type": "string",
+                        "format": "binary",
+                        "description": "JPEG ou PNG; até 5242880 bytes e 16000000 pixels."
+                      },
+                      "metadata": {
+                        "type": "string",
+                        "maxLength": 65536,
+                        "contentMediaType": "application/json",
+                        "contentSchema": {
+                          "$ref": "#/components/schemas/StrictModel"
+                        },
+                        "description": "JSON serializado em campo textual UTF-8, até 64 KiB."
+                      }
+                    },
+                    "required": [
+                      "image",
+                      "metadata"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "image": {
+                        "type": "string",
+                        "format": "binary",
+                        "description": "JPEG ou PNG; até 5242880 bytes e 16000000 pixels."
+                      }
+                    },
+                    "required": [
+                      "image"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "image_base64": {
+                        "type": "string",
+                        "minLength": 4,
+                        "maxLength": 7000000,
+                        "description": "Base64 ou data URI JPEG/PNG. Prefira image binária em multipart."
+                      }
+                    },
+                    "required": [
+                      "image_base64"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            },
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "image_base64": {
+                    "type": "string",
+                    "minLength": 4,
+                    "maxLength": 7000000,
+                    "description": "Base64 ou data URI JPEG/PNG. Prefira image binária em multipart."
+                  }
+                },
+                "required": [
+                  "image_base64"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "x-required-capability": "read"
+      }
+    },
+    "/animals": {
+      "post": {
+        "operationId": "enrollAnimal",
+        "summary": "Cadastrar ou substituir animal pelo UUID",
+        "tags": [
+          "animals"
+        ],
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "schema": {
+              "enum": [
+                "pt-BR",
+                "en"
+              ],
+              "default": "pt-BR"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Operação concluída.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador criado pelo gateway; use ao relatar uma falha.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Content-Language": {
+                "schema": {
+                  "enum": [
+                    "pt-BR",
+                    "en"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnimalResult"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Erro estável. Prefira Accept: application/problem+json, application/json. Falhas anteriores ao gateway podem ter outro corpo; verifique o status HTTP.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador criado pelo gateway; use ao relatar uma falha.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Content-Language": {
+                "schema": {
+                  "enum": [
+                    "pt-BR",
+                    "en"
+                  ]
+                }
+              },
+              "Retry-After": {
+                "description": "Espera mínima em segundos para 429/503, quando presente.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "image": {
+                        "type": "string",
+                        "format": "binary",
+                        "description": "JPEG ou PNG; até 5242880 bytes e 16000000 pixels."
+                      },
+                      "metadata": {
+                        "type": "string",
+                        "maxLength": 65536,
+                        "contentMediaType": "application/json",
+                        "contentSchema": {
+                          "$ref": "#/components/schemas/AnimalEnrollment"
+                        },
+                        "description": "JSON serializado em campo textual UTF-8, até 64 KiB."
+                      }
+                    },
+                    "required": [
+                      "image",
+                      "metadata"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "animal": {
+                        "type": "string",
+                        "contentMediaType": "application/json",
+                        "contentSchema": {
+                          "$ref": "#/components/schemas/Animal"
+                        }
+                      },
+                      "animal_id": {
+                        "format": "uuid",
+                        "title": "Animal Id",
+                        "type": "string",
+                        "description": "Prefira UUID criado pelo cliente para repetição estável. Na ausência, o gateway gera um UUID novo."
+                      },
+                      "single_subject_confirmed": {
+                        "const": true,
+                        "title": "Single Subject Confirmed",
+                        "type": "boolean"
+                      },
+                      "image": {
+                        "type": "string",
+                        "format": "binary",
+                        "description": "JPEG ou PNG; até 5242880 bytes e 16000000 pixels."
+                      }
+                    },
+                    "required": [
+                      "animal",
+                      "single_subject_confirmed",
+                      "image"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "animal": {
+                        "type": "string",
+                        "contentMediaType": "application/json",
+                        "contentSchema": {
+                          "$ref": "#/components/schemas/Animal"
+                        }
+                      },
+                      "animal_id": {
+                        "format": "uuid",
+                        "title": "Animal Id",
+                        "type": "string",
+                        "description": "Prefira UUID criado pelo cliente para repetição estável. Na ausência, o gateway gera um UUID novo."
+                      },
+                      "single_subject_confirmed": {
+                        "const": true,
+                        "title": "Single Subject Confirmed",
+                        "type": "boolean"
+                      },
+                      "image_base64": {
+                        "type": "string",
+                        "minLength": 4,
+                        "maxLength": 7000000,
+                        "description": "Base64 ou data URI JPEG/PNG. Prefira image binária em multipart."
+                      }
+                    },
+                    "required": [
+                      "animal",
+                      "single_subject_confirmed",
+                      "image_base64"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            },
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "animal": {
+                    "$ref": "#/components/schemas/Animal"
+                  },
+                  "animal_id": {
+                    "format": "uuid",
+                    "title": "Animal Id",
+                    "type": "string",
+                    "description": "Prefira UUID criado pelo cliente para repetição estável. Na ausência, o gateway gera um UUID novo."
+                  },
+                  "single_subject_confirmed": {
+                    "const": true,
+                    "title": "Single Subject Confirmed",
+                    "type": "boolean"
+                  },
+                  "image_base64": {
+                    "type": "string",
+                    "minLength": 4,
+                    "maxLength": 7000000,
+                    "description": "Base64 ou data URI JPEG/PNG. Prefira image binária em multipart."
+                  }
+                },
+                "required": [
+                  "animal",
+                  "single_subject_confirmed",
+                  "image_base64"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "x-required-capability": "write"
+      }
+    },
+    "/animals/search": {
+      "post": {
+        "operationId": "searchAnimals",
+        "summary": "Ordenar animais da mesma espécie",
+        "tags": [
+          "animals"
+        ],
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "schema": {
+              "enum": [
+                "pt-BR",
+                "en"
+              ],
+              "default": "pt-BR"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operação concluída.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador criado pelo gateway; use ao relatar uma falha.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Content-Language": {
+                "schema": {
+                  "enum": [
+                    "pt-BR",
+                    "en"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnimalSearchResult"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Erro estável. Prefira Accept: application/problem+json, application/json. Falhas anteriores ao gateway podem ter outro corpo; verifique o status HTTP.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador criado pelo gateway; use ao relatar uma falha.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Content-Language": {
+                "schema": {
+                  "enum": [
+                    "pt-BR",
+                    "en"
+                  ]
+                }
+              },
+              "Retry-After": {
+                "description": "Espera mínima em segundos para 429/503, quando presente.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "image": {
+                        "type": "string",
+                        "format": "binary",
+                        "description": "JPEG ou PNG; até 5242880 bytes e 16000000 pixels."
+                      },
+                      "metadata": {
+                        "type": "string",
+                        "maxLength": 65536,
+                        "contentMediaType": "application/json",
+                        "contentSchema": {
+                          "$ref": "#/components/schemas/AnimalSearch"
+                        },
+                        "description": "JSON serializado em campo textual UTF-8, até 64 KiB."
+                      }
+                    },
+                    "required": [
+                      "image",
+                      "metadata"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "species": {
+                        "pattern": "^[a-z][a-z0-9-]{1,63}$",
+                        "title": "Species",
+                        "type": "string"
+                      },
+                      "single_subject_confirmed": {
+                        "const": true,
+                        "title": "Single Subject Confirmed",
+                        "type": "boolean"
+                      },
+                      "method": {
+                        "default": "dinov2",
+                        "enum": [
+                          "dinov2",
+                          "wildfusion"
+                        ],
+                        "title": "Method",
+                        "type": "string"
+                      },
+                      "limit": {
+                        "default": 10,
+                        "maximum": 20,
+                        "minimum": 1,
+                        "title": "Limit",
+                        "type": "integer"
+                      },
+                      "candidate_limit": {
+                        "default": 40,
+                        "maximum": 100,
+                        "minimum": 20,
+                        "title": "Candidate Limit",
+                        "type": "integer"
+                      },
+                      "exact": {
+                        "default": false,
+                        "title": "Exact",
+                        "type": "boolean"
+                      },
+                      "hnsw_ef": {
+                        "default": 128,
+                        "maximum": 1024,
+                        "minimum": 32,
+                        "title": "Hnsw Ef",
+                        "type": "integer"
+                      },
+                      "image": {
+                        "type": "string",
+                        "format": "binary",
+                        "description": "JPEG ou PNG; até 5242880 bytes e 16000000 pixels."
+                      }
+                    },
+                    "required": [
+                      "species",
+                      "single_subject_confirmed",
+                      "image"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "species": {
+                        "pattern": "^[a-z][a-z0-9-]{1,63}$",
+                        "title": "Species",
+                        "type": "string"
+                      },
+                      "single_subject_confirmed": {
+                        "const": true,
+                        "title": "Single Subject Confirmed",
+                        "type": "boolean"
+                      },
+                      "method": {
+                        "default": "dinov2",
+                        "enum": [
+                          "dinov2",
+                          "wildfusion"
+                        ],
+                        "title": "Method",
+                        "type": "string"
+                      },
+                      "limit": {
+                        "default": 10,
+                        "maximum": 20,
+                        "minimum": 1,
+                        "title": "Limit",
+                        "type": "integer"
+                      },
+                      "candidate_limit": {
+                        "default": 40,
+                        "maximum": 100,
+                        "minimum": 20,
+                        "title": "Candidate Limit",
+                        "type": "integer"
+                      },
+                      "exact": {
+                        "default": false,
+                        "title": "Exact",
+                        "type": "boolean"
+                      },
+                      "hnsw_ef": {
+                        "default": 128,
+                        "maximum": 1024,
+                        "minimum": 32,
+                        "title": "Hnsw Ef",
+                        "type": "integer"
+                      },
+                      "image_base64": {
+                        "type": "string",
+                        "minLength": 4,
+                        "maxLength": 7000000,
+                        "description": "Base64 ou data URI JPEG/PNG. Prefira image binária em multipart."
+                      }
+                    },
+                    "required": [
+                      "species",
+                      "single_subject_confirmed",
+                      "image_base64"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            },
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "species": {
+                    "pattern": "^[a-z][a-z0-9-]{1,63}$",
+                    "title": "Species",
+                    "type": "string"
+                  },
+                  "single_subject_confirmed": {
+                    "const": true,
+                    "title": "Single Subject Confirmed",
+                    "type": "boolean"
+                  },
+                  "method": {
+                    "default": "dinov2",
+                    "enum": [
+                      "dinov2",
+                      "wildfusion"
+                    ],
+                    "title": "Method",
+                    "type": "string"
+                  },
+                  "limit": {
+                    "default": 10,
+                    "maximum": 20,
+                    "minimum": 1,
+                    "title": "Limit",
+                    "type": "integer"
+                  },
+                  "candidate_limit": {
+                    "default": 40,
+                    "maximum": 100,
+                    "minimum": 20,
+                    "title": "Candidate Limit",
+                    "type": "integer"
+                  },
+                  "exact": {
+                    "default": false,
+                    "title": "Exact",
+                    "type": "boolean"
+                  },
+                  "hnsw_ef": {
+                    "default": 128,
+                    "maximum": 1024,
+                    "minimum": 32,
+                    "title": "Hnsw Ef",
+                    "type": "integer"
+                  },
+                  "image_base64": {
+                    "type": "string",
+                    "minLength": 4,
+                    "maxLength": 7000000,
+                    "description": "Base64 ou data URI JPEG/PNG. Prefira image binária em multipart."
+                  }
+                },
+                "required": [
+                  "species",
+                  "single_subject_confirmed",
+                  "image_base64"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "x-required-capability": "read"
+      }
+    },
+    "/animals/{id}": {
+      "delete": {
+        "operationId": "removeAnimal",
+        "summary": "Excluir animal e representações",
+        "tags": [
+          "animals"
+        ],
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "schema": {
+              "enum": [
+                "pt-BR",
+                "en"
+              ],
+              "default": "pt-BR"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Operação concluída.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador criado pelo gateway; use ao relatar uma falha.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Content-Language": {
+                "schema": {
+                  "enum": [
+                    "pt-BR",
+                    "en"
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Erro estável. Prefira Accept: application/problem+json, application/json. Falhas anteriores ao gateway podem ter outro corpo; verifique o status HTTP.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador criado pelo gateway; use ao relatar uma falha.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Content-Language": {
+                "schema": {
+                  "enum": [
+                    "pt-BR",
+                    "en"
+                  ]
+                }
+              },
+              "Retry-After": {
+                "description": "Espera mínima em segundos para 429/503, quando presente.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyError"
+                }
+              }
+            }
+          }
+        },
+        "x-required-capability": "delete"
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Person": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "sex": {
+            "default": "unspecified",
+            "enum": [
+              "female",
+              "male",
+              "other",
+              "unspecified"
+            ],
+            "title": "Sex",
+            "type": "string"
+          },
+          "birth_date": {
+            "format": "date",
+            "title": "Birth Date",
+            "type": "string"
+          },
+          "state": {
+            "maxLength": 80,
+            "minLength": 2,
+            "title": "State",
+            "type": "string"
+          },
+          "city": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "City",
+            "type": "string"
+          },
+          "consent": {
+            "const": true,
+            "title": "Consent",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "birth_date",
+          "state",
+          "city",
+          "consent"
+        ],
+        "title": "Person",
+        "type": "object"
+      },
+      "Enrollment": {
+        "additionalProperties": false,
+        "properties": {
+          "person": {
+            "$ref": "#/components/schemas/Person"
+          },
+          "person_id": {
+            "format": "uuid",
+            "title": "Person Id",
+            "type": "string",
+            "description": "Prefira UUID criado pelo cliente para repetição estável. Na ausência, o gateway gera um UUID novo."
+          }
+        },
+        "required": [
+          "person"
+        ],
+        "title": "Enrollment",
+        "type": "object"
+      },
+      "Filters": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Name"
+          },
+          "sex": {
+            "anyOf": [
+              {
+                "enum": [
+                  "female",
+                  "male",
+                  "other",
+                  "unspecified"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Sex"
+          },
+          "birth_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Birth Date"
+          },
+          "birth_date_from": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Birth Date From"
+          },
+          "birth_date_to": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Birth Date To"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "minLength": 2,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "State"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "City"
+          }
+        },
+        "title": "Filters",
+        "type": "object"
+      },
+      "Search": {
+        "additionalProperties": false,
+        "properties": {
+          "method": {
+            "default": "facenet",
+            "enum": [
+              "facenet",
+              "sface"
+            ],
+            "title": "Method",
+            "type": "string"
+          },
+          "filters": {
+            "$ref": "#/components/schemas/Filters"
+          },
+          "limit": {
+            "default": 10,
+            "maximum": 50,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "min_score": {
+            "anyOf": [
+              {
+                "maximum": 1,
+                "minimum": -1,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Min Score"
+          },
+          "exact": {
+            "default": false,
+            "title": "Exact",
+            "type": "boolean"
+          },
+          "hnsw_ef": {
+            "default": 128,
+            "maximum": 1024,
+            "minimum": 32,
+            "title": "Hnsw Ef",
+            "type": "integer"
+          }
+        },
+        "title": "Search",
+        "type": "object"
+      },
+      "Animal": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "species": {
+            "pattern": "^[a-z][a-z0-9-]{1,63}$",
+            "title": "Species",
+            "type": "string"
+          },
+          "sex": {
+            "default": "unspecified",
+            "enum": [
+              "female",
+              "male",
+              "other",
+              "unspecified"
+            ],
+            "title": "Sex",
+            "type": "string"
+          },
+          "breed": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Breed",
+            "type": "string"
+          },
+          "color": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Color",
+            "type": "string"
+          },
+          "pattern": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Pattern",
+            "type": "string"
+          },
+          "consent": {
+            "const": true,
+            "title": "Consent",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "species",
+          "consent"
+        ],
+        "title": "Animal",
+        "type": "object"
+      },
+      "AnimalEnrollment": {
+        "additionalProperties": false,
+        "properties": {
+          "animal": {
+            "$ref": "#/components/schemas/Animal"
+          },
+          "animal_id": {
+            "format": "uuid",
+            "title": "Animal Id",
+            "type": "string",
+            "description": "Prefira UUID criado pelo cliente para repetição estável. Na ausência, o gateway gera um UUID novo."
+          },
+          "single_subject_confirmed": {
+            "const": true,
+            "title": "Single Subject Confirmed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "animal",
+          "single_subject_confirmed"
+        ],
+        "title": "AnimalEnrollment",
+        "type": "object"
+      },
+      "AnimalSearch": {
+        "additionalProperties": false,
+        "properties": {
+          "species": {
+            "pattern": "^[a-z][a-z0-9-]{1,63}$",
+            "title": "Species",
+            "type": "string"
+          },
+          "single_subject_confirmed": {
+            "const": true,
+            "title": "Single Subject Confirmed",
+            "type": "boolean"
+          },
+          "method": {
+            "default": "dinov2",
+            "enum": [
+              "dinov2",
+              "wildfusion"
+            ],
+            "title": "Method",
+            "type": "string"
+          },
+          "limit": {
+            "default": 10,
+            "maximum": 20,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "candidate_limit": {
+            "default": 40,
+            "maximum": 100,
+            "minimum": 20,
+            "title": "Candidate Limit",
+            "type": "integer"
+          },
+          "exact": {
+            "default": false,
+            "title": "Exact",
+            "type": "boolean"
+          },
+          "hnsw_ef": {
+            "default": 128,
+            "maximum": 1024,
+            "minimum": 32,
+            "title": "Hnsw Ef",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "species",
+          "single_subject_confirmed"
+        ],
+        "title": "AnimalSearch",
+        "type": "object"
+      },
+      "StrictModel": {
+        "additionalProperties": false,
+        "properties": {},
+        "title": "StrictModel",
+        "type": "object"
+      },
+      "FaceObservation": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string"
+          },
+          "dimensions": {
+            "type": "integer"
+          },
+          "detection_confidence": {
+            "type": "number"
+          },
+          "box": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 4,
+            "maxItems": 4
+          },
+          "landmarks": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "minItems": 5,
+            "maxItems": 5
+          },
+          "landmark_order": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 5,
+            "maxItems": 5
+          },
+          "image_size": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "sharpness": {
+            "type": "number"
+          },
+          "methods": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "model",
+          "dimensions",
+          "detection_confidence"
+        ],
+        "additionalProperties": true
+      },
+      "PersonRecord": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "sex": {
+            "default": "unspecified",
+            "enum": [
+              "female",
+              "male",
+              "other",
+              "unspecified"
+            ],
+            "title": "Sex",
+            "type": "string"
+          },
+          "birth_date": {
+            "format": "date",
+            "title": "Birth Date",
+            "type": "string"
+          },
+          "state": {
+            "maxLength": 80,
+            "minLength": 2,
+            "title": "State",
+            "type": "string"
+          },
+          "city": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "City",
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "face": {
+            "$ref": "#/components/schemas/FaceObservation"
+          },
+          "consent_recorded_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "name",
+          "sex",
+          "birth_date",
+          "state",
+          "city",
+          "id",
+          "face",
+          "consent_recorded_at",
+          "updated_at"
+        ],
+        "additionalProperties": false
+      },
+      "AnimalRecord": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "species": {
+            "pattern": "^[a-z][a-z0-9-]{1,63}$",
+            "title": "Species",
+            "type": "string"
+          },
+          "sex": {
+            "default": "unspecified",
+            "enum": [
+              "female",
+              "male",
+              "other",
+              "unspecified"
+            ],
+            "title": "Sex",
+            "type": "string"
+          },
+          "breed": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Breed",
+            "type": "string"
+          },
+          "color": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Color",
+            "type": "string"
+          },
+          "pattern": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Pattern",
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "representation": {
+            "type": "object",
+            "properties": {
+              "model": {
+                "type": "string"
+              },
+              "dimensions": {
+                "type": "integer"
+              },
+              "local_features": {
+                "type": "integer"
+              },
+              "subject_detection": {
+                "const": "user_confirmed_crop"
+              }
+            },
+            "required": [
+              "model",
+              "dimensions",
+              "local_features",
+              "subject_detection"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "name",
+          "species",
+          "sex",
+          "breed",
+          "color",
+          "pattern",
+          "id",
+          "updated_at",
+          "representation"
+        ],
+        "additionalProperties": false
+      },
+      "PersonResult": {
+        "type": "object",
+        "properties": {
+          "person": {
+            "$ref": "#/components/schemas/PersonRecord"
+          }
+        },
+        "required": [
+          "person"
+        ],
+        "additionalProperties": false
+      },
+      "AnimalResult": {
+        "type": "object",
+        "properties": {
+          "animal": {
+            "$ref": "#/components/schemas/AnimalRecord"
+          }
+        },
+        "required": [
+          "animal"
+        ],
+        "additionalProperties": false
+      },
+      "FaceResult": {
+        "type": "object",
+        "properties": {
+          "face": {
+            "$ref": "#/components/schemas/FaceObservation"
+          }
+        },
+        "required": [
+          "face"
+        ],
+        "additionalProperties": false
+      },
+      "PeoplePage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonRecord"
+            }
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      },
+      "PeopleSearchResult": {
+        "type": "object",
+        "properties": {
+          "matches": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "person": {
+                  "$ref": "#/components/schemas/PersonRecord"
+                },
+                "score": {
+                  "type": "number"
+                },
+                "distance": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "person",
+                "score",
+                "distance"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "face": {
+            "$ref": "#/components/schemas/FaceObservation"
+          },
+          "metric": {
+            "const": "cosine"
+          },
+          "mode": {
+            "enum": [
+              "exact",
+              "approximate"
+            ]
+          },
+          "timing_ms": {
+            "type": "object",
+            "properties": {
+              "inference": {
+                "type": "number"
+              },
+              "search": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "inference",
+              "search"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "matches",
+          "face",
+          "metric",
+          "mode",
+          "timing_ms"
+        ],
+        "additionalProperties": false
+      },
+      "AnimalSearchResult": {
+        "type": "object",
+        "properties": {
+          "matches": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "animal": {
+                  "$ref": "#/components/schemas/AnimalRecord"
+                },
+                "score": {
+                  "type": "number"
+                },
+                "components": {
+                  "type": "object",
+                  "properties": {
+                    "global_cosine": {
+                      "type": "number"
+                    },
+                    "local_matches": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "global_cosine",
+                    "local_matches"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "animal",
+                "score",
+                "components"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "method": {
+            "enum": [
+              "dinov2",
+              "wildfusion"
+            ]
+          },
+          "calibrated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "matches",
+          "method",
+          "calibrated"
+        ],
+        "additionalProperties": false
+      },
+      "Problem": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "format": "uri"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer",
+            "minimum": 400,
+            "maximum": 599
+          },
+          "detail": {
+            "type": "string"
+          },
+          "instance": {
+            "type": "string",
+            "format": "uri"
+          },
+          "code": {
+            "type": "string"
+          },
+          "request_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "status",
+          "detail",
+          "instance",
+          "code",
+          "request_id"
+        ],
+        "additionalProperties": true
+      },
+      "LegacyError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "additionalProperties": false
+      },
+      "Health": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "const": "ok"
+          },
+          "model": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "Methods": {
+        "type": "object",
+        "properties": {
+          "methods": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "domain": {
+                  "enum": [
+                    "person",
+                    "animal"
+                  ]
+                },
+                "dimensions": {
+                  "type": "integer"
+                },
+                "available": {
+                  "type": "boolean"
+                },
+                "requires": {
+                  "type": "string"
+                },
+                "variant": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "domain",
+                "dimensions",
+                "available"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "methods"
+        ],
+        "additionalProperties": false
+      },
+      "Capabilities": {
+        "type": "object",
+        "properties": {
+          "api_version": {
+            "const": "1"
+          },
+          "contract_version": {
+            "type": "string"
+          },
+          "preferred_upload": {
+            "const": "multipart/form-data"
+          },
+          "image_field": {
+            "const": "image"
+          },
+          "metadata_field": {
+            "const": "metadata"
+          },
+          "accepted_image_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "max_image_bytes": {
+            "type": "integer"
+          },
+          "max_metadata_bytes": {
+            "type": "integer"
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "read",
+                "write",
+                "delete"
+              ]
+            }
+          },
+          "request_timeout_seconds": {
+            "type": "integer"
+          },
+          "openapi": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "api_version",
+          "contract_version",
+          "preferred_upload",
+          "image_field",
+          "metadata_field",
+          "accepted_image_types",
+          "max_image_bytes",
+          "max_metadata_bytes",
+          "permissions",
+          "request_timeout_seconds",
+          "openapi"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "securitySchemes": {
+      "accessKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Chave com permissões read, write e/ou delete."
+      }
+    }
+  }
+}

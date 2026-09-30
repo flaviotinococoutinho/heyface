@@ -8,4 +8,6 @@ return [
     'connect_timeout_seconds' => 2,
     'vision_timeout_seconds' => 45,
     'max_body_bytes' => 8 * 1024 * 1024,
+    'max_image_kib' => 5 * 1024,
+    'max_metadata_bytes' => 64 * 1024,
 ];

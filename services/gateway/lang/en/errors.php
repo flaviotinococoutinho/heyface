@@ -1,12 +1,14 @@
 <?php
 
 return [
+    'server_error' => 'The request could not be completed. Use the request ID to report the failure.',
     'unauthorized' => 'Enter a valid access key.', 'forbidden' => 'This key cannot perform this operation.',
     'not_found' => 'Resource not found.', 'person_not_found' => 'Record not found.',
     'invalid_request' => 'Check the submitted fields and try again.',
     'invalid_base64' => 'The base64 image is invalid.',
     'invalid_image' => 'The image could not be read. Send a valid JPEG or PNG.',
     'unsupported_image' => 'Use a JPEG or PNG image.',
+    'unsupported_media_type' => 'Send the image using multipart/form-data or JSON.',
     'image_too_large' => 'Use an image up to 5 MB and 16 million pixels.',
     'no_face' => 'No face found. Use a well-lit, front-facing photo.',
     'multiple_faces' => 'More than one face found. Crop the image to one person.',

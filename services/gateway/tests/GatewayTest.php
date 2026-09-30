@@ -6,7 +6,9 @@ namespace Tests;
 
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Testing\TestCase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 final class GatewayTest extends TestCase
 {
@@ -102,5 +104,82 @@ final class GatewayTest extends TestCase
         $this->withToken('reader-a')->postJson('/api/v1/search', ['image_base64' => 'abcd'])
             ->assertStatus(503)->assertHeader('Retry-After', '2')
             ->assertJsonPath('error.code', 'vision_unavailable');
+    }
+
+    public function test_binary_image_is_forwarded_as_multipart_with_original_bytes(): void
+    {
+        $captured = [];
+        Http::fake(function ($request) use (&$captured) {
+            $captured = ['body' => $request->body(), 'headers' => $request->headers()];
+
+            return Http::response(['matches' => []]);
+        });
+        $bytes = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+cP1sAAAAASUVORK5CYII=');
+        $image = UploadedFile::fake()->createWithContent('photo.png', $bytes);
+        $response = $this->withToken('reader-a')->post('/api/v1/search', [
+            'image' => $image, 'metadata' => '{"method":"sface","filters":{}}',
+        ])->assertOk();
+        self::assertStringContainsString('multipart/form-data', $captured['headers']['Content-Type'][0]);
+        self::assertStringContainsString($bytes, $captured['body']);
+        self::assertStringContainsString('"filters":{}', $captured['body']);
+        self::assertStringNotContainsString('image_base64', $captured['body']);
+        self::assertSame($response->headers->get('X-Request-Id'), $captured['headers']['X-Request-Id'][0]);
+    }
+
+    public function test_metadata_envelope_cannot_mix_sources(): void
+    {
+        $this->withToken('reader-a')->post('/api/v1/search', [
+            'metadata' => '{}', 'image_base64' => 'abcd',
+        ])->assertUnprocessable();
+        Http::assertNothingSent();
+    }
+
+    public function test_problem_details_are_negotiated_and_localized_for_authentication_errors(): void
+    {
+        $response = $this->withHeader('Accept', 'application/problem+json, application/json')
+            ->withHeader('Accept-Language', 'en')->post('/api/v1/search')
+            ->assertUnauthorized()->assertHeader('Content-Type', 'application/problem+json')
+            ->assertJsonPath('code', 'unauthorized')->assertJsonPath('status', 401)
+            ->assertJsonPath('detail', 'Enter a valid access key.');
+        self::assertSame($response->headers->get('X-Request-Id'), $response->json('request_id'));
+        $this->withHeader('Accept', 'application/json')->post('/api/v1/search')
+            ->assertUnauthorized()->assertJsonPath('error.code', 'unauthorized');
+    }
+
+    public function test_capabilities_describe_this_credential_without_exposing_secrets(): void
+    {
+        $this->withToken('reader-a')->getJson('/api/v1/capabilities')->assertOk()
+            ->assertJsonPath('permissions', ['read'])->assertJsonPath('max_image_bytes', 5242880);
+        Http::assertNothingSent();
+    }
+
+    public function test_public_contract_preserves_json_objects_without_authentication(): void
+    {
+        $response = $this->get('/api/v1/openapi.json')->assertOk();
+        $contract = json_decode($response->getContent(), false, 512, JSON_THROW_ON_ERROR);
+        self::assertInstanceOf(\stdClass::class, $contract->components->schemas->StrictModel->properties);
+        Http::assertNothingSent();
+    }
+
+    public function test_unsupported_transport_does_not_reach_the_image_service(): void
+    {
+        $this->withToken('reader-a')->call('POST', '/api/v1/search', [], [], [], [
+            'CONTENT_TYPE' => 'application/protobuf', 'HTTP_ACCEPT' => 'application/problem+json',
+            'HTTP_AUTHORIZATION' => 'Bearer reader-a',
+        ], 'binary')->assertStatus(415)->assertJsonPath('code', 'unsupported_media_type');
+        Http::assertNothingSent();
+    }
+
+    public function test_enrollment_preserves_the_supplied_identifier_and_previous_default(): void
+    {
+        Http::fake(['vision:8000/*' => Http::response(['person' => []], 201)]);
+        $identity = '1d4fa779-962e-4b5b-b88e-8a8f8d6093b5';
+        $this->withToken('writer-b')->postJson('/api/v1/people', [
+            'person_id' => $identity, 'image_base64' => 'abcd',
+        ])->assertCreated();
+        $this->withToken('writer-b')->postJson('/api/v1/animals', ['image_base64' => 'abcd'])->assertCreated();
+        $sent = Http::recorded();
+        self::assertSame($identity, $sent[0][0]['person_id']);
+        self::assertTrue(Str::isUuid($sent[1][0]['animal_id']));
     }
 }

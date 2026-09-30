@@ -17,6 +17,7 @@ COPY config ./config
 COPY lang ./lang
 COPY routes ./routes
 COPY public ./public
+COPY resources ./resources
 RUN mkdir -p bootstrap/cache storage/logs storage/framework/cache storage/framework/views && composer dump-autoload --no-dev --classmap-authoritative && php artisan octane:install --server=swoole --no-interaction
 COPY php.ini /usr/local/etc/php/conf.d/heyface.ini
 

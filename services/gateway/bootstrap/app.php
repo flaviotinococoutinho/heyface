@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Access\Authenticate;
 use App\Http\RequestContext;
+use App\Http\ResponsePresenter;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -18,15 +19,19 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->api(prepend: [Authenticate::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->respond(fn ($response) => ResponsePresenter::finalize($response, request()));
         $exceptions->shouldRenderJsonWhen(fn (Request $request, Throwable $e) => true);
         $exceptions->render(function (ValidationException $e) {
             return response()->json(['error' => ['code' => 'invalid_request', 'message' => __('errors.invalid_request')]], 422);
         });
         $exceptions->render(function (HttpException $e) {
             $code = match ($e->getStatusCode()) {
-                401 => 'unauthorized', 403 => 'forbidden', 404 => 'not_found', 413 => 'image_too_large', 429 => 'rate_limited', default => 'invalid_request'
+                401 => 'unauthorized', 403 => 'forbidden', 404 => 'not_found', 413 => 'image_too_large', 415 => 'unsupported_media_type', 429 => 'rate_limited', default => 'invalid_request'
             };
 
             return response()->json(['error' => ['code' => $code, 'message' => __('errors.'.$code)]], $e->getStatusCode(), $e->getHeaders());
         });
+        $exceptions->render(fn (Throwable $error) => response()->json([
+            'error' => ['code' => 'server_error', 'message' => __('errors.server_error')],
+        ], 500));
     })->create();

@@ -11,7 +11,7 @@ final class Authenticate
 {
     public function handle(Request $request, Closure $next)
     {
-        if ($request->is('api/v1/health/live')) {
+        if ($request->is('api/v1/health/live', 'api/v1/openapi.json')) {
             return $next($request);
         }
         $token = $request->bearerToken();
