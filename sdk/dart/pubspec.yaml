@@ -1,0 +1,13 @@
+name: heyface_client
+description: Cliente Dart da API Heyface para busca visual de pessoas e animais.
+version: 0.1.0
+publish_to: none
+repository: https://github.com/flaviotinococoutinho/heyface
+environment:
+  sdk: '>=3.10.0 <4.0.0'
+dependencies:
+  http: ^1.6.0
+  http_parser: ^4.1.2
+dev_dependencies:
+  test: ^1.28.0
+  lints: ^6.0.0

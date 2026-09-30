@@ -17,3 +17,5 @@
 **/.phpunit.result.cache
 **/.phpunit.cache/
 **/.pint.cache
+**/.dart_tool/
+**/build/
