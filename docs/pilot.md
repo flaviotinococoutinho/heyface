@@ -1,8 +1,8 @@
-# Da demonstração ao seu cenário
+# Avaliar um piloto
 
-Heyface é uma busca visual sobre um catálogo que você controla. A foto reduz o conjunto de candidatos; os dados cadastrais ajudam a refinar; a pessoa que conhece o contexto confere o resultado.
+Heyface é uma busca visual sobre um catálogo que você controla. A foto reduz o conjunto de candidatos e os dados cadastrais refinam a busca. A pessoa que conhece o contexto confere o resultado.
 
-O primeiro teste leva de uma imagem a um cadastro fictício. Um piloto responde a outra pergunta: isso economiza tempo e encontra candidatos úteis no trabalho de quem vai usar?
+O primeiro teste usa uma imagem de um cadastro fictício. O piloto avalia se a busca economiza tempo e encontra candidatos úteis na tarefa escolhida.
 
 ## Escolha um problema pequeno
 
@@ -15,7 +15,7 @@ O primeiro teste leva de uma imagem a um cadastro fictício. Um piloto responde 
 
 Escolha um cenário, um responsável pela avaliação e um catálogo delimitado. O método para humanos usa um rosto por imagem. Para animais, a comparação global parte de um recorte confirmado; a fusão exige calibração da espécie. A referência de pesquisa não garante desempenho para qualquer espécie ou condição.
 
-## Primeiro contato
+## Executar a demonstração
 
 ```sh
 ./heyface try
@@ -55,8 +55,9 @@ O [benchmark do índice](operations.md) mede distância/latência com vetores si
 
 ## O que oferecer em um piloto
 
-Uma entrega pequena pode incluir preparação do catálogo, conexão da API ao fluxo existente, orientação de captura, acompanhamento dos resultados e um relatório de decisão. O valor está na tarefa que ficou mais fácil de concluir. Use as medidas do piloto para decidir se faz sentido ampliar volume, incluir uma espécie, criar o app ou oferecer operação gerenciada.
+Uma entrega pequena pode incluir preparação do catálogo, conexão da API ao fluxo existente, orientação de captura, acompanhamento dos resultados e um relatório de decisão. Use as medidas do piloto para decidir se faz sentido ampliar volume, incluir uma espécie, criar o app ou oferecer operação gerenciada.
 
 O ambiente atual é local e usa chaves por espaço de trabalho. Um serviço compartilhado ainda exige uma camada de contas, operação HTTPS, política de retenção e dimensionamento conforme o uso. A [arquitetura](architecture.md) mostra onde essas integrações entram.
 
 Para relatar o teste, use o [formulário de feedback](https://github.com/flaviotinococoutinho/heyface/issues/new?template=pilot-feedback.yml). Descreva o cenário e o resultado, sem anexar chaves, imagens pessoais ou dados cadastrais.
+

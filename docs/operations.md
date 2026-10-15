@@ -2,7 +2,7 @@
 
 ## Configuração
 
-`./heyface init` cria `.env`, `.secrets/demo-token.txt` e `.secrets/access/keys.json`. Arquivos existentes são preservados. Não copie valores de outra instalação: cada ambiente deve ter suas próprias chaves. Se já tiver criado um `.env` vazio, preencha as variáveis obrigatórias ou preserve esse arquivo com outro nome antes de rodar `init`.
+`./heyface init` cria `.env`, `.secrets/demo-token.txt` e `.secrets/access/keys.json`. Arquivos existentes são preservados. Cada ambiente precisa de suas próprias chaves. Não copie valores de outra instalação. Se já tiver criado um `.env` vazio, preencha as variáveis obrigatórias ou preserve esse arquivo com outro nome antes de rodar `init`.
 
 | Ajuste | Onde | Efeito |
 | --- | --- | --- |
@@ -14,7 +14,7 @@
 | Credenciais/escopos | `.secrets/access/keys.json` | Registro de hashes SHA-256, tenant e capacidades |
 | Calibrações | `.local/calibrations/<tenant>/<species>.json` | Curvas compatíveis com a representação |
 
-Cada entrada do registro usa o hash SHA-256 da chave como índice, um `tenant` de 1–64 caracteres alfanuméricos/`_`/`-` e os escopos `read`, `write` e/ou `delete`. Para revogar, remova a entrada ou marque `revoked: true`. Preserve a chave em local privado. O gateway relê o registro a cada requisição; faça a substituição do arquivo de forma atômica ao automatizar mudanças. Não altere o tenant de uma chave esperando migrar cadastros: os dados permanecem no tenant original.
+Cada entrada do registro usa o hash SHA-256 da chave como índice, um `tenant` de 1–64 caracteres alfanuméricos/`_`/`-` e os escopos `read`, `write` e/ou `delete`. Para revogar, remova a entrada ou marque `revoked: true`. Preserve a chave em local privado. O gateway relê o registro a cada requisição. Ao automatizar mudanças, substitua o arquivo de forma atômica. Não altere o tenant de uma chave esperando migrar cadastros: os dados permanecem no tenant original.
 
 Depois de alterar configuração ou código, rode `./heyface up`. O build é sequencial para reduzir pico de memória e aceita Docker com builder clássico ou BuildKit. Não é necessário instalar buildx para usar os scripts.
 
@@ -22,7 +22,7 @@ Depois de alterar configuração ou código, rode `./heyface up`. O build é seq
 
 A aplicação usa CPU por padrão. O processo Python carrega os pesos uma vez. Inferências pesadas têm concorrência limitada e espera curta; quando o serviço está ocupado, a resposta é 503, sem uma fila ilimitada na memória. Mais workers Python duplicariam os pesos; meça memória e throughput antes de aumentar processos.
 
-Redis usa política `noeviction`: perder o controle de rate limit por pressão de memória seria pior do que recusar chamadas. Falhas de armazenamento ou transporte não são tratadas como “ninguém encontrado”.
+Redis usa política `noeviction`: perder o controle de rate limit por pressão de memória seria pior do que recusar chamadas. Falhas de armazenamento ou transporte não são tratadas como "ninguém encontrado".
 
 Uploads temporários do proxy e do PHP usam `/tmp` em memória (`tmpfs`). Não há persistência de imagens originais. O diretório de artefatos baixados e os vetores usam volumes nomeados do Compose. `stop` preserva esses volumes. Evite `docker compose down -v` se houver dados que precise manter.
 
@@ -42,7 +42,7 @@ Os snapshots das coleções são capturados em sequência. Se precisar de um pon
 ./heyface benchmark --points 3000 --queries 40
 ```
 
-Cria uma coleção separada `heyface_benchmark_<id>`, gera vetores normalizados com seed fixa e mede busca exata versus HNSW com diferentes valores de `hnsw_ef`. O relatório em `.local/benchmark.json` informa contagem realmente indexada, recall@10, p50 e p95. A coleção sintética é preservada para inspeção e não participa da aplicação nem do backup normal.
+O comando cria uma coleção separada `heyface_benchmark_<id>` e gera vetores normalizados com seed fixa. Depois, compara busca exata e HNSW com diferentes valores de `hnsw_ef`. O relatório em `.local/benchmark.json` informa contagem realmente indexada, recall@10, p50 e p95. A coleção sintética é preservada para inspeção e não participa da aplicação nem do backup normal.
 
 Recall mede sobreposição dos vizinhos aproximados com os exatos. Não mede reconhecimento facial. A distribuição sintética também não representa necessariamente os embeddings do seu acervo. Antes de decidir por outro banco ou reduzir precisão, repita o experimento com volume, seletividade dos filtros e concorrência próximos da carga real. O benchmark não escolhe parâmetros da aplicação automaticamente.
 
@@ -58,3 +58,4 @@ Recall mede sobreposição dos vizinhos aproximados com os exatos. Não mede rec
 - 503 ao comparar: respeite `Retry-After`; não envie uma nova rajada imediata.
 
 A configuração é para desenvolvimento local. Exposição pública exige TLS, gestão de identidades, política de retenção, operação de backups e testes de capacidade próprios. O bind em loopback é intencional.
+

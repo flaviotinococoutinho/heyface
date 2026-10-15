@@ -1,12 +1,12 @@
 # Heyface
 
-**Encontre cadastros pela imagem.** Compare uma foto com o seu catálogo de pessoas ou animais, refine pelos dados que já conhece e confira os candidatos em ordem de semelhança.
+Heyface busca pessoas ou animais por imagem em um catálogo. A aplicação combina comparação visual e filtros cadastrais para ordenar candidatos por semelhança.
 
 [![checks](https://github.com/flaviotinococoutinho/heyface/actions/workflows/checks.yml/badge.svg)](https://github.com/flaviotinococoutinho/heyface/actions/workflows/checks.yml)
 
 ![Heyface](web/public/brand/heyface.png)
 
-## Experimente uma ideia concreta
+## Cenários de uso
 
 | Quero testar | O que o Heyface entrega |
 | --- | --- |
@@ -16,9 +16,18 @@
 
 A tela inicial guia o primeiro teste com dois cadastros fictícios. Depois, o [roteiro de piloto](docs/pilot.md) ajuda a avaliar a aplicação com fotos diferentes e tarefas reais. O score organiza candidatos; a conferência da identidade continua sendo uma decisão de quem conhece o contexto.
 
-## Começar
+## Executar o primeiro teste
 
-Você precisa do **Docker com Compose v2 ou superior**, usando containers Linux. Não precisa instalar PHP, Python, Node ou extensões na máquina. O primeiro build baixa dependências e os pesos verificados por SHA-256; reserve internet, alguns minutos e cerca de 10 GB livres. A configuração usa CPU e funciona em Linux amd64/arm64, macOS com Docker Desktop/Colima e Windows com Docker Desktop + WSL2. Reserve 4 CPUs e 6 GB de memória disponíveis para o Docker.
+Use Docker com Compose v2 e containers Linux. O primeiro build baixa dependências e pesos verificados por SHA-256. Reserve acesso à internet, cerca de 10 GB livres, 4 CPUs e 6 GB de memória disponíveis para o Docker.
+
+A configuração usa CPU. Os ambientes previstos são Linux amd64 ou arm64, macOS com Docker Desktop ou Colima, e Windows com Docker Desktop e WSL2. As dependências PHP, Python e Node são instaladas nas imagens dos containers.
+
+Clone o repositório e entre na pasta:
+
+```sh
+git clone https://github.com/flaviotinococoutinho/heyface.git
+cd heyface
+```
 
 **macOS e Linux**
 
@@ -26,7 +35,7 @@ Você precisa do **Docker com Compose v2 ou superior**, usando containers Linux.
 ./heyface try
 ```
 
-**Windows — PowerShell**
+**Windows, PowerShell**
 
 ```powershell
 .\heyface.ps1 try
@@ -38,9 +47,9 @@ Também dá para abrir `Iniciar.command` no macOS ou `Iniciar.bat` no Windows. S
 
 Para iniciar sem preparar exemplos, use `./heyface up`. Para consultar a chave novamente, use `./heyface token`. No Windows, use os mesmos comandos com `.\heyface.ps1`.
 
-`up` pode ser repetido. Ele preserva credenciais, cadastros e calibrações. A porta pode ser alterada em `.env`. Só o servidor web é publicado, em `127.0.0.1`; os serviços internos usam uma rede Docker isolada.
+Você pode repetir `up` sem recriar credenciais, cadastros ou calibrações. Para alterar a porta, edite `.env`. Só o servidor web é publicado, em `127.0.0.1`; os serviços internos usam uma rede Docker isolada.
 
-## O que tem aqui
+## Recursos e limites
 
 - Cadastro de pessoas com nome, sexo informado, data de nascimento, estado e cidade. Busca textual e por imagem, com filtros aplicados antes da comparação vetorial.
 - Dois métodos humanos, FaceNet e SFace, com espaços vetoriais separados. O cadastro guarda ambos em uma operação. Os cinco pontos detectados do rosto são metadados; não são os eixos do embedding.
@@ -96,4 +105,5 @@ scripts/               preparação e operações locais
 - [Operação, backup e diagnóstico](docs/operations.md)
 - [Convenções para evolução](CONTRIBUTING.md)
 
-Qdrant foi escolhido pela busca HNSW com filtros de payload e vetores nomeados. Não existe um banco que vença todos os cenários: o benchmark daqui mede latência e recall do índice no seu ambiente, sem alegar superioridade sobre outros bancos. A configuração local não inclui replicação nem alta disponibilidade.
+Qdrant oferece busca HNSW com filtros de payload e vetores nomeados. O benchmark do projeto mede latência e recall do índice no seu ambiente. A configuração local não inclui replicação nem alta disponibilidade.
+
